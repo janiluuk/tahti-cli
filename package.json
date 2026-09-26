@@ -1,22 +1,49 @@
 {
-  "name": "@tahti-player/tahti-cli",
-  "version": "0.0.1",
+  "name": "tahti-cli",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Terminal-first CLI for Tahti — scriptable access to the Tahti API (read-only commands).",
-  "bin": {
-    "tahti": "./src/cli.mjs"
+  "description": "Terminal-first CLI for Tahti: scriptable access to the Tahti API through @tahti/api-client.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/janiluuk/tahti-cli.git"
   },
+  "bin": {
+    "tahti": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@12.5.1+sha512.e3f305bc784a2bc89f5ad3b6138889470fae8d2af5f36b61216ec91c2c3d64089775f9de38aac331044ea40f245cb0d5666392dfdf65824e1907ef6a2c62de5f",
   "scripts": {
-    "test": "vitest --run",
-    "test:watch": "vitest",
+    "sdk:latest": "pnpm add @tahti/api-client@latest",
+    "prebuild": "pnpm sdk:latest",
+    "build": "tsc -p tsconfig.build.json",
+    "build:offline": "tsc -p tsconfig.build.json",
+    "type-check": "tsc",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "vitest --run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tahti/api-client": "latest"
   },
   "devDependencies": {
-    "@tahti-player/eslint-config": "workspace:*",
+    "@eslint/js": "^10.0.0",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@types/node": "^24.13.4",
-    "typescript": "^5.9.2",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
+    "globals": "^17.0.0",
+    "prettier": "3.9.8",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.0",
     "vitest": "^4.1.11"
   }
 }
