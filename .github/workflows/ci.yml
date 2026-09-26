@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # tahti-org's release workflow sends this after publishing @tahti/api-client.
+  repository_dispatch:
+    types: [api-client-published]
+  # Fallback for a missed dispatch: catches SDK releases within a day.
+  schedule:
+    - cron: '17 5 * * *'
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Not frozen: the SDK is re-resolved to its newest release below, so the
+      # lockfile's pinned version is only a starting point.
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Use the newest @tahti/api-client
+        env:
+          ANNOUNCED: ${{ github.event.client_payload.version }}
+        run: |
+          installed() { node -p "require('./node_modules/@tahti/api-client/package.json').version"; }
+          pnpm sdk:latest
+          # A dispatch can arrive before the new version reaches npm's CDN.
+          for attempt in 1 2 3 4 5; do
+            if [ -z "$ANNOUNCED" ] || [ "$(installed)" = "$ANNOUNCED" ]; then
+              break
+            fi
+            echo "npm still serves $(installed), waiting for $ANNOUNCED (attempt $attempt)"
+            sleep 30
+            pnpm sdk:latest
+          done
+          version=$(installed)
+          echo "Building against @tahti/api-client $version"
+          echo "### @tahti/api-client $version" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$ANNOUNCED" ] && [ "$version" != "$ANNOUNCED" ]; then
+            echo "::warning::Dispatch announced $ANNOUNCED but npm resolved $version"
+          fi
+
+      - name: Type-check
+        run: pnpm type-check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build:offline
+
+      - name: Smoke test
+        run: node dist/cli.js --help
