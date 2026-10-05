@@ -1,112 +1,195 @@
-# @tahti-player/tahti-cli
+# tahti-cli
 
-Terminal-first CLI for Tahti — thin, scriptable access to the public Tahti
-API, in the spirit of [antiwork/gumroad-cli](https://github.com/antiwork/gumroad-cli).
-See [`docs/todo/tahti-cli-tool.md`](../../docs/todo/tahti-cli-tool.md) for
-the roadmap this v1 slice comes from.
+Terminal-first CLI for [Tahti](https://tahti.live) — scriptable access to the
+public Tahti API, plus an interactive **`tahti shell`** TUI (blessed + mpv).
 
-## Scope
+Inspired by [antiwork/gumroad-cli](https://github.com/antiwork/gumroad-cli).
 
-Read-only commands, plus `import`, which uploads a folder of audio files to
-your library. No playback/TUI yet (that's an explicit stretch
-goal in the roadmap doc, not started here).
+## Related repositories
 
-## Auth
+| Repo | Role |
+| ---- | ---- |
+| **[janiluuk/tahti-cli](https://github.com/janiluuk/tahti-cli)** (this repo) | Standalone CLI package and docs |
+| **[janiluuk/tahti-org](https://github.com/janiluuk/tahti-org)** | Tahti API, workers, studio web (`apps/api`, `apps/web`) — the HTTP API this CLI calls |
+| **[janiluuk/tahti-player](https://github.com/janiluuk/tahti-player)** | Tahti Player (desktop/web). Active CLI development is also mirrored in [`packages/tahti-cli`](https://github.com/janiluuk/tahti-player/tree/main/packages/tahti-cli) until the split is finished |
+| **[janiluuk/tahti-registry](https://github.com/janiluuk/tahti-registry)** | Official plugin/theme Store catalog (`plugins.json`) |
+| **[janiluuk/tahti-radio-discord-bot](https://github.com/janiluuk/tahti-radio-discord-bot)** | 24/7 Discord voice bot for Tahti Radio (not an HTTP CLI target) |
 
-Tahti's API already has a personal API token mechanism
-(`Authorization: Bearer tahti_...`, read/write scopes) — this CLI uses that
-directly rather than inventing a new auth flow. It does **not** talk to
-`../tahti-org`'s generated `@tahti/api-client` package: that package is
-`private: true` and lives in a separate repo/pnpm workspace, so it isn't
-importable from here without publishing it or vendoring its types — this
-CLI instead makes plain `fetch` calls against the public HTTP API, the same
-approach `packages/tahti-web` itself uses (it doesn't consume
-`@tahti/api-client` either, despite the roadmap doc's original assumption
-that it did).
+Product / mission docs live in tahti-org (`docs/CONSTITUTION.md`,
+`docs/AGENT.md`). Streaming architecture:
+[`docs/technical/streaming-architecture.md`](https://github.com/janiluuk/tahti-org/blob/main/docs/technical/streaming-architecture.md).
 
-1. Sign in at [tahti.live](https://tahti.live) → Settings → Account → API
-   tokens → create a token.
-2. `export TAHTI_API_TOKEN=tahti_...`
-3. Optionally `export TAHTI_API_URL=https://api.tahti.live` (this is
-   already the default).
+> **Sync note:** Until `@tahti/api-client` is published from tahti-org and this
+> repo’s standalone SDK PR lands, the copy under
+> [tahti-player `packages/tahti-cli`](https://github.com/janiluuk/tahti-player/tree/main/packages/tahti-cli)
+> (e.g. PR [#508](https://github.com/janiluuk/tahti-player/pull/508)) is the
+> day-to-day development tree. This repo tracks the same command surface.
 
-## Usage
+## Requirements
+
+- **Node.js** 20+
+- **`TAHTI_API_TOKEN`** — personal API token from
+  [tahti.live](https://tahti.live) → Settings → Account → API tokens  
+  (not required for public `tahti search`)
+- **`mpv`** on `PATH` — only for `tahti shell` playback
+  ([mpv.io](https://mpv.io/); e.g. `apt install mpv` / `brew install mpv`)
+
+Optional: `TAHTI_API_URL` (default `https://api.tahti.live`).
+
+## Install / run
+
+```bash
+git clone https://github.com/janiluuk/tahti-cli.git
+cd tahti-cli
+pnpm install   # or: npm install
+export TAHTI_API_TOKEN=tahti_...
+pnpm tahti --help
+# or: node ./src/cli.mjs --help
+```
+
+From the **tahti-player** monorepo instead:
 
 ```bash
 pnpm --filter @tahti-player/tahti-cli exec tahti --help
-pnpm --filter @tahti-player/tahti-cli exec tahti whoami
-pnpm --filter @tahti-player/tahti-cli exec tahti library list --sort title
-pnpm --filter @tahti-player/tahti-cli exec tahti library show <id> --json
-pnpm --filter @tahti-player/tahti-cli exec tahti releases list --limit 20
-pnpm --filter @tahti-player/tahti-cli exec tahti releases list --help
-pnpm --filter @tahti-player/tahti-cli exec tahti releases show <id>
-pnpm --filter @tahti-player/tahti-cli exec tahti search night drive --limit 10
+pnpm --filter @tahti-player/tahti-cli exec tahti shell
 ```
 
-## Commands
+## Auth
 
-Every command accepts `--json` (prints the API response unchanged) and
-`--help`. Tables use the same aligned layout, with `-` for empty values.
+Uses Tahti’s existing personal API tokens (`Authorization: Bearer tahti_...`,
+read/write scopes). Plain `fetch` against the public HTTP API — no dependency
+on the generated `@tahti/api-client` package yet (that package is still
+`private` in tahti-org; see the WIP standalone SDK PR).
 
-| Command                                                              | API route                                                                | Output                                                                                                                                                               |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tahti whoami [--json]`                                              | `GET /api/auth/me`                                                       | Username, display name, tier, membership, channel slug, storage used                                                                                                 |
-| `tahti library list [--sort <order>] [--json]`                       | `GET /api/me/sound`                                                      | Your library sounds (up to 100); `--sort` is one of `newest`, `oldest`, `title`, `duration`, `bpm`, `genre`                                                          |
-| `tahti library show <id> [--json]`                                   | `GET /api/me/sound/:id`                                                  | One sound's metadata (status, duration, visibility, genre, BPM/key, source format, dates)                                                                            |
-| `tahti releases list [--page <n>] [--limit <n>] [--json]`            | `GET /api/me/releases`                                                   | Your releases (id, title, type, state, release date, track count); `--limit` is 1-100                                                                                |
-| `tahti releases show <id> [--json]`                                  | `GET /api/me/releases/:id`                                               | One release (type, state, release date, genre, UPC, label, smart link and its views, catalog checklist) plus its tracklist (position, title, duration, status, ISRC) |
-| `tahti search <query> [--page <n>] [--limit <n>] [--json]`           | `GET /api/v1/search/tracks`                                              | Public, ready tracks whose title matches (id, title, artist, duration, channel), newest first                                                                        |
-| `tahti import <folder> [--recursive] [--dry-run] [--force] [--json]` | `POST /api/uploads/prepare`, storage `PUT`, `POST /api/uploads/complete` | One row per audio file: uploaded (with the new sound id), skipped, or failed with the reason                                                                         |
+1. Sign in at [tahti.live](https://tahti.live) → Settings → Account → API tokens
+2. `export TAHTI_API_TOKEN=tahti_...`
+3. Optionally `export TAHTI_API_URL=https://api.tahti.live`
 
-Everything except `search` and `import` is a `GET` route behind `requireAuth`,
-so any personal API token works. `import` sends `POST` requests and needs a
-token with the `write` scope.
+`import` needs the **write** scope. Other commands work with **read**.
 
-`import` uploads each audio file in the folder (mp3, flac, wav, aiff, m4a, aac,
-ogg, opus) as a new sound titled after its file name, one file at a time:
+---
 
-- Hidden files, empty files and files over 2 GB are skipped; subfolders are
-  only read with `--recursive`.
-- A file whose title is already in your library is skipped, so running the
-  import again only sends what is new. `--force` uploads it anyway.
-- `--dry-run` lists what would be uploaded and sends nothing.
-- One failed file does not stop the rest; the command exits with 1 if any
-  file failed. `--json` prints one object per file (`file`, `title`, `status`,
-  `id`, `error`).
-- Uploaded sounds are processed by Tahti afterwards, so they show as
-  `PROCESSING` in `tahti library list` for a while. Tags inside the files
-  (artist, album, artwork) are not read; edit the sound on tahti.live.
+## Interactive shell cheatsheet (`tahti shell`)
 
-`search` is public: it works without `TAHTI_API_TOKEN` and never sends the
-token, since the API rejects a request carrying an invalid token even on public
-routes. Words after `search` form one query (max 100 characters). The API
-returns a fixed page of 20 tracks from an offset, so `--limit` (1-20) trims that
-page and `--page` steps the offset by `--limit`; `--json` prints the API's page
-of 20 unchanged.
+```bash
+export TAHTI_API_TOKEN=tahti_...
+# mpv must be installed
+pnpm tahti shell
+```
 
-Artist names in table output never show an email address: an empty or
-email-like `artistName` falls back to the channel's username. `releases show`
-does not print the presigned `audioUrl`s the API returns; `--json` does.
+Opens a full-screen TUI (blessed). Needs a real terminal (TTY), not a pipe.
 
-`whoami` never prints your email in table output, and shows the username if
-the display name is empty. `whoami --json` is the raw `/api/auth/me` response,
-which does include the `email` field.
+### Layout
+
+| Pane | Contents |
+| ---- | -------- |
+| **Left — Nav** | Library · Search · Radio · Queue |
+| **Main — List** | Items for the selected nav pane |
+| **Bottom — Now playing** | Title, artist, play/pause, time (from mpv) |
+
+### What each pane does
+
+| Pane | Source | Play |
+| ---- | ------ | ---- |
+| **Library** | `GET /api/me/sound` | Presigned URL via `GET /api/me/sound/:id/editor/source` → mpv |
+| **Search** | Public `GET /api/v1/search/tracks` | Only if the row already has a stream URL (usually none — browse titles, play owned tracks from Library) |
+| **Radio** | Tahti Radio HLS (`GET /api/channels/tahti-radio`) + enabled internet-radio presets (`GET /api/v1/internet-radio/presets/enabled`) | Live stream in mpv; clears the progressive queue |
+| **Queue** | In-memory queue for this session | Enter plays the selected row |
+
+### Keys
+
+| Key | Action |
+| --- | ------ |
+| `Tab` | Focus nav ↔ list |
+| `↑` / `↓` or `k` / `j` | Move selection |
+| `Enter` | Play selection (from Library, also queues the rest below) |
+| `a` | Add selection to queue (tracks only; not live radio) |
+| `c` | Clear queue |
+| `Space` | Play / pause |
+| `n` / `p` | Next / previous (queue) |
+| `←` / `→` | Seek −5s / +5s |
+| `/` | Focus search query (switches to Search) |
+| `?` | Help overlay |
+| `q` or `Ctrl+C` | Quit (stops mpv) |
+
+### Shell tips
+
+- Missing **mpv** → clear error at play time; install it and retry.
+- **Live radio** replaces the current track and clears the progressive queue.
+- **Search** is for discovery; catalog rows typically have no stream URL.
+- Token is required so Library can resolve play URLs.
+
+---
+
+## One-shot commands
+
+Every command accepts `--help`. Most accept `--json` (raw API body). Tables use
+aligned columns; `-` for empty values.
+
+| Command | API | Notes |
+| ------- | --- | ----- |
+| `tahti whoami [--json]` | `GET /api/auth/me` | No email in table output |
+| `tahti library list [--sort <order>] [--json]` | `GET /api/me/sound` | sort: `newest`, `oldest`, `title`, `duration`, `bpm`, `genre` |
+| `tahti library show <id> [--json]` | `GET /api/me/sound/:id` | |
+| `tahti releases list [--page] [--limit] [--json]` | `GET /api/me/releases` | |
+| `tahti releases show <id> [--json]` | `GET /api/me/releases/:id` | Tracklist; no audio URLs in table |
+| `tahti search <query> [--page] [--limit] [--json]` | `GET /api/v1/search/tracks` | Public; never sends the token |
+| `tahti import <folder> [--recursive] [--dry-run] [--force] [--json]` | uploads prepare/complete | Needs **write** scope |
+| `tahti hearthis sets [--json]` | `GET /api/v1/imports/hearthis/me-sets` | Needs hearthis handle on profile |
+| `tahti hearthis set <permalink-or-url> [--json]` | set tracks | |
+| `tahti hearthis download-set <permalink-or-url> [--out <dir>] [--dry-run] [--force] [--json]` | + hearthis `download_url` | Layout: `Artist/Album (year)/NN - Track.ext` |
+| `tahti shell` | library / search / radio + mpv | See cheatsheet above |
+
+### Examples
+
+```bash
+pnpm tahti whoami
+pnpm tahti library list --sort title
+pnpm tahti search night drive --limit 10
+pnpm tahti hearthis sets
+pnpm tahti hearthis download-set 378936-9675121 --dry-run
+pnpm tahti hearthis download-set 378936-9675121 --out ~/Music/hearthis
+pnpm tahti shell
+```
+
+### hearthis.at discography
+
+Requires `TAHTI_API_TOKEN` and a hearthis.at handle on your Tahti profile
+(Settings → Profile). Downloads use hearthis.at `download_url` (original
+upload — often WAV/FLAC), never the compressed stream preview.
+
+### import
+
+Uploads each audio file (mp3, flac, wav, aiff, m4a, aac, ogg, opus) as a new
+library sound titled from the file name. Skips titles already in the library
+unless `--force`. `--dry-run` lists only. Exit code `1` if any file failed.
+
+---
 
 ## Errors
 
-| Situation                                            | Message                                                                                       |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| No `TAHTI_API_TOKEN` (every command except `search`) | `Missing API token. Create a personal API token ...`                                          |
-| 401 (revoked, expired or wrong token)                | `Token invalid or missing scope (<API message>) ...`                                          |
-| 403                                                  | `Token invalid or missing scope (<API message>): this token is not allowed to access <path>.` |
-| 404                                                  | The API's message, e.g. `Sound item not found` or `Release not found`                         |
-| Network failure                                      | `Could not reach the Tahti API at <url>: <reason>`                                            |
-| Unknown flag or bad value                            | The problem plus a pointer to `tahti <command> --help`                                        |
+| Situation | Message |
+| --------- | ------- |
+| No `TAHTI_API_TOKEN` (except `search`) | Missing API token… |
+| 401 / 403 | Token invalid or missing scope… |
+| 404 | API message (e.g. Sound item not found) |
+| Network failure | Could not reach the Tahti API at \<url\>… |
+| `tahti shell` without TTY | Needs an interactive terminal |
+| `tahti shell` without mpv | Install mpv… |
 
-All errors exit with status 1.
+All errors exit with status `1`.
 
-## Not yet designed (see the roadmap doc)
+## Development
 
-- Where this CLI ultimately ships from (this workspace vs. its own repo).
-- Playback / TUI.
-- More write commands (edit metadata, create releases). `import` is the first.
+```bash
+pnpm install
+pnpm test
+pnpm lint   # needs a local eslint setup; in tahti-player use the workspace filter
+```
+
+Roadmap / history while the package still lives in the player monorepo:
+[`docs/todo/tahti-cli-tool.md`](https://github.com/janiluuk/tahti-player/blob/main/docs/todo/tahti-cli-tool.md).
+
+## License
+
+AGPL-3.0-or-later — same as Tahti (Tahti ry).

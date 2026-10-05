@@ -1,22 +1,38 @@
 {
-  "name": "@tahti-player/tahti-cli",
+  "name": "tahti-cli",
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Terminal-first CLI for Tahti — scriptable access to the Tahti API.",
+  "description": "Terminal-first CLI for Tahti — scriptable API access and an interactive shell (mpv).",
   "bin": {
     "tahti": "./src/cli.mjs"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janiluuk/tahti-cli.git"
+  },
+  "homepage": "https://github.com/janiluuk/tahti-cli",
+  "bugs": {
+    "url": "https://github.com/janiluuk/tahti-cli/issues"
+  },
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "test": "vitest --run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "tahti": "node ./src/cli.mjs"
+  },
+  "dependencies": {
+    "blessed": "^0.1.81"
   },
   "devDependencies": {
-    "@tahti-player/eslint-config": "workspace:*",
+    "@types/blessed": "^0.1.27",
     "@types/node": "^24.13.4",
     "typescript": "^5.9.2",
     "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
