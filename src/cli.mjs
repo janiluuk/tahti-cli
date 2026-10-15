@@ -2,20 +2,40 @@
 import { parseArgs } from 'node:util';
 
 import { CliError, resolveConfig } from './api-client.mjs';
+import {
+  runBlocksAdd,
+  runBlocksList,
+  runBlocksRemove,
+} from './commands/blocks.mjs';
 import { runChannel } from './commands/channel.mjs';
+import {
+  runCollectionsAdd,
+  runCollectionsRemove,
+} from './commands/collections-edit.mjs';
 import { runCollectionsList } from './commands/collections-list.mjs';
 import { runCollectionsShow } from './commands/collections-show.mjs';
+import { runFeed } from './commands/feed.mjs';
 import { runHearthisDownloadSet } from './commands/hearthis-download-set.mjs';
 import { runHearthisSet } from './commands/hearthis-set.mjs';
 import { runHearthisSets } from './commands/hearthis-sets.mjs';
 import { runImport } from './commands/import.mjs';
+import { runLibraryDelete } from './commands/library-delete.mjs';
+import { runLibraryDownload } from './commands/library-download.mjs';
+import { runLibraryEdit } from './commands/library-edit.mjs';
 import { LIBRARY_SORTS, runLibraryList } from './commands/library-list.mjs';
+import { runLibraryProcessing } from './commands/library-processing.mjs';
 import { runLibraryShow } from './commands/library-show.mjs';
+import { MAX_LIKES_LIMIT, runLikes } from './commands/likes.mjs';
+import { runLogin, runLogout } from './commands/login.mjs';
+import { MAX_MENTIONS_LIMIT, runMentions } from './commands/mentions.mjs';
+import { runMessagesList, runMessagesSend } from './commands/messages.mjs';
 import { runNotificationsList } from './commands/notifications-list.mjs';
 import { runNotificationsRead } from './commands/notifications-read.mjs';
+import { runPurchases } from './commands/purchases.mjs';
 import { runReleasesList } from './commands/releases-list.mjs';
 import { runReleasesShow } from './commands/releases-show.mjs';
 import { runSearch, SEARCH_PAGE_SIZE } from './commands/search.mjs';
+import { MAX_STASH_LIMIT, runStashList } from './commands/stash-list.mjs';
 import { runStats, STATS_RANGES } from './commands/stats.mjs';
 import { runWhoami } from './commands/whoami.mjs';
 import { runShell } from './shell/shell.mjs';
@@ -31,6 +51,28 @@ const COMMANDS = [
 membership and channel. --json prints the full API response unchanged.`,
     options: JSON_OPTION,
     run: (config, { values }) => runWhoami(config, { json: values.json }),
+  },
+  {
+    path: ['login'],
+    usage: 'tahti login [--token <token>]',
+    summary: 'Save an API token so you do not have to export it',
+    details: `Reads the token from a prompt, or from stdin when piped
+(\`pass tahti | tahti login\`), checks it with GET /api/auth/me, then saves it to
+$XDG_CONFIG_HOME/tahti/config.json (~/.config/tahti/config.json), readable
+only by you. TAHTI_API_TOKEN still wins when it is set. A TAHTI_API_URL set
+while logging in is saved too.
+  --token <token>   Give the token directly (it ends up in your shell history)`,
+    options: { token: { type: 'string' } },
+    run: (config, { values }) => runLogin(config, { token: values.token }),
+  },
+  {
+    path: ['logout'],
+    usage: 'tahti logout',
+    summary: 'Forget the saved API token',
+    details: `Deletes the file \`tahti login\` wrote. The token keeps working until you
+revoke it at tahti.live → Settings → Account → API tokens.`,
+    options: {},
+    run: () => runLogout(),
   },
   {
     path: ['library', 'list'],
@@ -51,6 +93,97 @@ membership and channel. --json prints the full API response unchanged.`,
     positionals: 1,
     run: (config, { values, positionals }) =>
       runLibraryShow(config, positionals[0], { json: values.json }),
+  },
+  {
+    path: ['library', 'edit'],
+    usage: 'tahti library edit <id> <field flags> [--json]',
+    summary: 'Change the metadata of one of your library sounds',
+    details: `Calls PATCH /api/me/sound/:id with only the fields you give and prints the
+sound as saved. Needs a token with the write scope.
+  --title <t>          New title (1-200 characters)
+  --description <t>    New description; "" clears it
+  --genre <g>          Main genre; "" clears it
+  --tags <a,b>         Replaces the tags (comma-separated, at most 20)
+  --bpm <n>            40-300, or "none" to clear it
+  --key <k>            Musical key, e.g. Am; "" clears it
+  --public, --private  Show or hide the sound on your profile
+  --downloads on|off   Allow or block downloads (streaming is unaffected)`,
+    options: {
+      ...JSON_OPTION,
+      title: { type: 'string' },
+      description: { type: 'string' },
+      genre: { type: 'string' },
+      tags: { type: 'string' },
+      bpm: { type: 'string' },
+      key: { type: 'string' },
+      public: { type: 'boolean', default: false },
+      private: { type: 'boolean', default: false },
+      downloads: { type: 'string' },
+    },
+    positionals: 1,
+    run: (config, { values, positionals }) =>
+      runLibraryEdit(config, positionals[0], values),
+  },
+  {
+    path: ['library', 'delete'],
+    usage: 'tahti library delete <id> --yes',
+    summary: 'Delete one of your library sounds',
+    details: `Looks the sound up with GET /api/me/sound/:id, then calls DELETE
+/api/me/sound/:id. Without --yes it only names the sound and stops. Deleting
+removes every version and its place in your rotation, and cannot be undone.
+Needs a token with the write scope.
+  --yes   Really delete it`,
+    options: { yes: { type: 'boolean', default: false } },
+    positionals: 1,
+    run: (config, { values, positionals }) =>
+      runLibraryDelete(config, positionals[0], { yes: values.yes }),
+  },
+  {
+    path: ['library', 'download'],
+    usage:
+      'tahti library download <id> [--out <dir>] [--force] [--url] [--json]',
+    summary: 'Download the original audio file of one of your sounds',
+    details: `Calls GET /api/me/sound/:id/download for a signed link (valid for an hour) to
+the best file Tahti keeps: the upload as sent, else FLAC, else MP3. The file
+is saved under the name the API gives, made safe for the file system.
+  --out <dir>   Destination folder (default: current directory)
+  --force       Replace a file that already exists
+  --url         Print the signed link instead of downloading`,
+    options: {
+      ...JSON_OPTION,
+      out: { type: 'string' },
+      force: { type: 'boolean', default: false },
+      url: { type: 'boolean', default: false },
+    },
+    positionals: 1,
+    run: (config, { values, positionals }) =>
+      runLibraryDownload(config, positionals[0], {
+        json: values.json,
+        outDir: values.out || '.',
+        force: values.force,
+        url: values.url,
+      }),
+  },
+  {
+    path: ['library', 'processing'],
+    usage: 'tahti library processing [--wait] [--timeout <s>] [--json]',
+    summary: 'List the sounds Tahti is still processing',
+    details: `Calls GET /api/me/sound/processing (up to 50, newest first). Handy after
+\`tahti import\`: uploads stay PENDING or PROCESSING for a while.
+  --wait          Check every 5 s until nothing is processing
+  --timeout <s>   Give up waiting after this many seconds (default: 600);
+                  exits with 1 if something is still processing`,
+    options: {
+      ...JSON_OPTION,
+      wait: { type: 'boolean', default: false },
+      timeout: { type: 'string' },
+    },
+    run: (config, { values }) =>
+      runLibraryProcessing(config, {
+        json: values.json,
+        wait: values.wait,
+        timeout: values.timeout,
+      }),
   },
   {
     path: ['releases', 'list'],
@@ -105,20 +238,25 @@ TAHTI_API_TOKEN and never sends it. Words after "search" form one query.
   },
   {
     path: ['import'],
-    usage: 'tahti import <folder> [--recursive] [--dry-run] [--force] [--json]',
+    usage:
+      'tahti import <folder> [--recursive] [--dry-run] [--force] [--ignore-tags] [--json]',
     summary: 'Upload the audio files in a folder to your library',
     details: `Uploads each audio file (mp3, flac, wav, aiff, m4a, aac, ogg, opus) as a new
-sound, titled after its file name. Files whose title is already in your library
-are skipped, so running it again only sends what is new. Needs a token with
-the write scope. Exits with 1 when any file fails.
+sound. The title, artist, genre and BPM come from the file's tags (ID3v2 in
+MP3, Vorbis comments in FLAC); without a title tag the file name is used.
+Files whose title is already in your library are skipped, so running it again
+only sends what is new. Needs a token with the write scope. Exits with 1 when
+any file fails.
   --recursive   Include subfolders
   --dry-run     List what would be uploaded without sending anything
-  --force       Upload even when the title is already in your library`,
+  --force       Upload even when the title is already in your library
+  --ignore-tags Title every sound after its file name and send no tags`,
     options: {
       ...JSON_OPTION,
       recursive: { type: 'boolean', default: false },
       'dry-run': { type: 'boolean', default: false },
       force: { type: 'boolean', default: false },
+      'ignore-tags': { type: 'boolean', default: false },
     },
     positionals: 1,
     run: (config, { values, positionals }) => {
@@ -132,6 +270,7 @@ the write scope. Exits with 1 when any file fails.
         recursive: values.recursive,
         dryRun: values['dry-run'],
         force: values.force,
+        ignoreTags: values['ignore-tags'],
       });
     },
   },
@@ -236,6 +375,124 @@ window for the top tracks.
       runStats(config, { json: values.json, range: values.range }),
   },
   {
+    path: ['purchases'],
+    usage: 'tahti purchases [--json]',
+    summary: 'List the music you have bought on Tahti',
+    details: `Calls GET /api/me/purchases: paid purchases, newest first, with the artist,
+the tier, the amount in euros and the tracks it unlocked.`,
+    options: JSON_OPTION,
+    run: (config, { values }) => runPurchases(config, { json: values.json }),
+  },
+  {
+    path: ['blocks', 'list'],
+    usage: 'tahti blocks list [--json]',
+    summary: 'List the accounts you have blocked',
+    details: 'Calls GET /api/me/blocks, newest first (up to 500).',
+    options: JSON_OPTION,
+    run: (config, { values }) => runBlocksList(config, { json: values.json }),
+  },
+  {
+    path: ['blocks', 'add'],
+    usage: 'tahti blocks add <username>',
+    summary: 'Block an account',
+    details: `Calls POST /api/me/blocks. A blocked account cannot message you, mention
+you or comment on your tracks, and the follows, loves, reposts and
+collection subscriptions between you are removed. Blocking twice is fine.
+Needs a token with the write scope.`,
+    options: {},
+    positionals: 1,
+    run: (config, { positionals }) => runBlocksAdd(config, positionals[0]),
+  },
+  {
+    path: ['blocks', 'remove'],
+    usage: 'tahti blocks remove <username>',
+    summary: 'Unblock an account',
+    details: `Calls DELETE /api/me/blocks/:username. What the block removed (follows,
+loves, reposts, subscriptions) does not come back. Needs a token with the
+write scope.`,
+    options: {},
+    positionals: 1,
+    run: (config, { positionals }) => runBlocksRemove(config, positionals[0]),
+  },
+  {
+    path: ['mentions'],
+    usage: 'tahti mentions [--limit <n>] [--json]',
+    summary: 'List where other artists have @mentioned you',
+    details: `Calls GET /api/me/mentions, newest first: who, in what (bio, announcement,
+release, newsletter, tracklist, chat) and where.
+  --limit <n>   How many, 1-${MAX_MENTIONS_LIMIT} (default: 20)`,
+    options: { ...JSON_OPTION, limit: { type: 'string' } },
+    run: (config, { values }) =>
+      runMentions(config, { json: values.json, limit: values.limit }),
+  },
+  {
+    path: ['messages', 'list'],
+    usage: 'tahti messages list [--json]',
+    summary: 'List your direct-message conversations',
+    details: `Calls GET /api/me/messages/conversations: who, unread count, last update
+and the start of the last message, plus the unread total. Listing does not
+mark anything read.`,
+    options: JSON_OPTION,
+    run: (config, { values }) => runMessagesList(config, { json: values.json }),
+  },
+  {
+    path: ['messages', 'send'],
+    usage: 'tahti messages send <username> <message...>',
+    summary: 'Send a direct message',
+    details: `Finds or starts your conversation with <username> (POST
+/api/me/messages/conversations), then sends the words after it as one
+message (up to 2000 characters). Quote the message if it contains shell
+characters. Needs a token with the write scope.`,
+    options: {},
+    positionals: Infinity,
+    run: (config, { positionals }) =>
+      runMessagesSend(config, positionals[0], positionals.slice(1)),
+  },
+  {
+    path: ['feed'],
+    usage: 'tahti feed [--limit <n>] [--json]',
+    summary: 'Show recent posts, tracks and releases from artists you follow',
+    details: `Calls GET /api/me/feed, newest first: the date, the artist, what it is
+(post, track, or the release type) and its title or the start of the post.
+  --limit <n>   Show only the first n items`,
+    options: { ...JSON_OPTION, limit: { type: 'string' } },
+    run: (config, { values }) =>
+      runFeed(config, { json: values.json, limit: values.limit }),
+  },
+  {
+    path: ['likes'],
+    usage: 'tahti likes [--limit <n>] [--json]',
+    summary: 'List the tracks you have loved',
+    details: `Calls GET /api/me/likes, newest first: when you loved it, the artist, the
+title and the track id. Only tracks that are still public (or your own) are
+listed. The table leaves out the signed playback links; --json has them.
+  --limit <n>   How many, 1-${MAX_LIKES_LIMIT} (default: 50)`,
+    options: { ...JSON_OPTION, limit: { type: 'string' } },
+    run: (config, { values }) =>
+      runLikes(config, { json: values.json, limit: values.limit }),
+  },
+  {
+    path: ['stash', 'list'],
+    usage: 'tahti stash list [--page <n>] [--limit <n>] [--json]',
+    summary: 'List the files in your private stash (stems, masters)',
+    details: `Calls GET /api/me/stash, newest first: id, file name, size, audio format and
+how many shares each file has. The table never shows share links; --json
+prints the API response, share tokens included.
+  --page <n>    Page number (default: 1)
+  --limit <n>   Files per page, 1-${MAX_STASH_LIMIT} (default: ${MAX_STASH_LIMIT})`,
+    options: {
+      ...JSON_OPTION,
+      page: { type: 'string' },
+      limit: { type: 'string' },
+    },
+    run: (config, { values }) =>
+      runStashList(config, {
+        json: values.json,
+        page: values.page,
+        limit: values.limit,
+      }),
+  },
+  {
     path: ['collections', 'list'],
     usage: 'tahti collections list [--json]',
     summary: 'List your collections (playlists, albums, mix series)',
@@ -256,6 +513,38 @@ Items someone else has since made private are marked "no longer public".
     positionals: 1,
     run: (config, { values, positionals }) =>
       runCollectionsShow(config, positionals[0], { json: values.json }),
+  },
+  {
+    path: ['collections', 'add'],
+    usage:
+      'tahti collections add <slug> [<sound-id>...] [--release <id>] [--json]',
+    summary: 'Add tracks or a release to one of your collections',
+    details: `Calls POST /api/me/collections/:slug/items once per item, appending each to
+the end. Your own tracks must have finished processing; other artists'
+tracks must be public; a release must be yours and published. An item that
+is already there is reported, not added twice. Exits with 1 when any item
+fails. Needs a token with the write scope.
+  --release <id>   Also add one of your releases`,
+    options: { ...JSON_OPTION, release: { type: 'string' } },
+    positionals: Infinity,
+    run: (config, { values, positionals }) =>
+      runCollectionsAdd(config, positionals[0], positionals.slice(1), {
+        release: values.release,
+        json: values.json,
+      }),
+  },
+  {
+    path: ['collections', 'remove'],
+    usage: 'tahti collections remove <slug> <#>',
+    summary: 'Remove an item from one of your collections',
+    details: `Removes the item at position <#> as numbered by \`tahti collections show\`
+(DELETE /api/me/collections/:slug/items/:itemId). Removes it from the
+collection only; the track or release itself stays. Needs a token with
+the write scope.`,
+    options: {},
+    positionals: 2,
+    run: (config, { positionals }) =>
+      runCollectionsRemove(config, positionals[0], positionals[1]),
   },
   {
     path: ['channel'],
@@ -286,12 +575,15 @@ pause, n/p next/prev, ←/→ seek, / search, a queue, ? help, q quit.`,
 
 const ENVIRONMENT_HELP = `Environment:
   TAHTI_API_TOKEN   Personal API token (tahti.live → Settings → Account → API tokens).
+                    Overrides the token saved by \`tahti login\`.
                     Required by every command except search and
-                    channel <slug>; import and notifications read need
-                    the write scope. hearthis download-set only needs read
+                    channel <slug>. Commands that change something (their
+                    --help says so) need a token with the write scope.
+                    hearthis download-set only needs read
                     (files are fetched from hearthis.at, not uploaded to Tahti).
                     shell needs a token for library playback.
-  TAHTI_API_URL     API base URL (default: https://api.tahti.live)
+  TAHTI_API_URL     API base URL (default: https://api.tahti.live, or the
+                    one saved by \`tahti login\`)
 
 External tools:
   mpv               Required for \`tahti shell\` playback (install separately).`;
