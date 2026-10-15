@@ -140,6 +140,7 @@ aligned columns; `-` for empty values.
 | `tahti stats [--range <days>] [--json]` | `GET /api/me/stats/summary`, `GET /api/me/stats/top-tracks` | `--range` `1`, `7`, `30`, `all` (top tracks only) |
 | `tahti collections list [--json]` | `GET /api/me/collections` | |
 | `tahti collections show <slug> [--json]` | `GET /api/me/collections/:slug` | No signed audio URLs in table |
+| `tahti channel [<slug>] [--json]` | `GET /api/channels/:slug` | Live state, now playing, next broadcast; public with a slug |
 | `tahti hearthis sets [--json]` | `GET /api/v1/imports/hearthis/me-sets` | Needs hearthis handle on profile |
 | `tahti hearthis set <permalink-or-url> [--json]` | set tracks | |
 | `tahti hearthis download-set <permalink-or-url> [--out <dir>] [--dry-run] [--force] [--json]` | + hearthis `download_url` | Layout: `Artist/Album (year)/NN - Track.ext` |
