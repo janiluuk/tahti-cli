@@ -2,15 +2,20 @@
 import { parseArgs } from 'node:util';
 
 import { CliError, resolveConfig } from './api-client.mjs';
+import { runCollectionsList } from './commands/collections-list.mjs';
+import { runCollectionsShow } from './commands/collections-show.mjs';
 import { runHearthisDownloadSet } from './commands/hearthis-download-set.mjs';
 import { runHearthisSet } from './commands/hearthis-set.mjs';
 import { runHearthisSets } from './commands/hearthis-sets.mjs';
 import { runImport } from './commands/import.mjs';
 import { LIBRARY_SORTS, runLibraryList } from './commands/library-list.mjs';
 import { runLibraryShow } from './commands/library-show.mjs';
+import { runNotificationsList } from './commands/notifications-list.mjs';
+import { runNotificationsRead } from './commands/notifications-read.mjs';
 import { runReleasesList } from './commands/releases-list.mjs';
 import { runReleasesShow } from './commands/releases-show.mjs';
 import { runSearch, SEARCH_PAGE_SIZE } from './commands/search.mjs';
+import { runStats, STATS_RANGES } from './commands/stats.mjs';
 import { runWhoami } from './commands/whoami.mjs';
 import { runShell } from './shell/shell.mjs';
 
@@ -182,6 +187,74 @@ paths that already exist (unless --force).
         dryRun: values['dry-run'],
         force: values.force,
       }),
+  },
+  {
+    path: ['notifications', 'list'],
+    usage: 'tahti notifications list [--limit <n>] [--unread] [--json]',
+    summary: 'List your notifications, newest first',
+    details: `Calls GET /api/me/notifications. Unread rows are marked with * and the\nunread total is printed under the table.
+  --limit <n>   How many to fetch, 1-50 (default: 30)
+  --unread      Show only the unread ones from what was fetched`,
+    options: {
+      ...JSON_OPTION,
+      limit: { type: 'string' },
+      unread: { type: 'boolean', default: false },
+    },
+    run: (config, { values }) =>
+      runNotificationsList(config, {
+        json: values.json,
+        limit: values.limit,
+        unread: values.unread,
+      }),
+  },
+  {
+    path: ['notifications', 'read'],
+    usage: 'tahti notifications read <id> | --all',
+    summary: 'Mark a notification, or all of them, read',
+    details: `Calls PATCH /api/me/notifications/:id/read, or POST
+/api/me/notifications/read-all with --all. --all leaves sticky notices
+(announcements you must acknowledge) unread; mark those by id. Needs a
+token with the write scope. Get ids from \`tahti notifications list\`.
+  --all         Mark every non-sticky notification read`,
+    options: { all: { type: 'boolean', default: false } },
+    positionals: 1,
+    run: (config, { values, positionals }) =>
+      runNotificationsRead(config, positionals[0], { all: values.all }),
+  },
+  {
+    path: ['stats'],
+    usage: 'tahti stats [--range <days>] [--json]',
+    summary: 'Show your plays, downloads, followers and top tracks',
+    details: `Calls GET /api/me/stats/summary and GET /api/me/stats/top-tracks (the ten
+most played tracks). The counters are today and all time; --range sets the
+window for the top tracks.
+  --range <days>   One of: ${STATS_RANGES.join(', ')} (default: all)
+--json prints { summary, topTracks } as the API sent them.`,
+    options: { ...JSON_OPTION, range: { type: 'string' } },
+    run: (config, { values }) =>
+      runStats(config, { json: values.json, range: values.range }),
+  },
+  {
+    path: ['collections', 'list'],
+    usage: 'tahti collections list [--json]',
+    summary: 'List your collections (playlists, albums, mix series)',
+    details: `Calls GET /api/me/collections, newest first: slug, name, type, visibility
+and item count. Use the slug with \`tahti collections show\`.`,
+    options: JSON_OPTION,
+    run: (config, { values }) =>
+      runCollectionsList(config, { json: values.json }),
+  },
+  {
+    path: ['collections', 'show'],
+    usage: 'tahti collections show <slug> [--json]',
+    summary: 'Show one of your collections with its items',
+    details: `Calls GET /api/me/collections/:slug. Get slugs from \`tahti collections list\`.
+Items someone else has since made private are marked "no longer public".
+--json includes the API's short-lived signed audio URLs; the table never does.`,
+    options: JSON_OPTION,
+    positionals: 1,
+    run: (config, { values, positionals }) =>
+      runCollectionsShow(config, positionals[0], { json: values.json }),
   },
   {
     path: ['shell'],

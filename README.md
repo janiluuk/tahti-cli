@@ -135,6 +135,11 @@ aligned columns; `-` for empty values.
 | `tahti releases show <id> [--json]` | `GET /api/me/releases/:id` | Tracklist; no audio URLs in table |
 | `tahti search <query> [--page] [--limit] [--json]` | `GET /api/v1/search/tracks` | Public; never sends the token |
 | `tahti import <folder> [--recursive] [--dry-run] [--force] [--json]` | uploads prepare/complete | Needs **write** scope |
+| `tahti notifications list [--limit <n>] [--unread] [--json]` | `GET /api/me/notifications` | Unread marked `*`, unread total below; `--limit` 1-50 |
+| `tahti notifications read <id> \| --all` | `PATCH /api/me/notifications/:id/read`, `POST /api/me/notifications/read-all` | Needs **write** scope; `--all` leaves sticky notices |
+| `tahti stats [--range <days>] [--json]` | `GET /api/me/stats/summary`, `GET /api/me/stats/top-tracks` | `--range` `1`, `7`, `30`, `all` (top tracks only) |
+| `tahti collections list [--json]` | `GET /api/me/collections` | |
+| `tahti collections show <slug> [--json]` | `GET /api/me/collections/:slug` | No signed audio URLs in table |
 | `tahti hearthis sets [--json]` | `GET /api/v1/imports/hearthis/me-sets` | Needs hearthis handle on profile |
 | `tahti hearthis set <permalink-or-url> [--json]` | set tracks | |
 | `tahti hearthis download-set <permalink-or-url> [--out <dir>] [--dry-run] [--force] [--json]` | + hearthis `download_url` | Layout: `Artist/Album (year)/NN - Track.ext` |
