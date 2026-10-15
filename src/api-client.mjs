@@ -1,13 +1,18 @@
+import { readSavedConfig } from './config-file.mjs';
+
 const DEFAULT_API_URL = 'https://api.tahti.live';
 
 const TOKEN_HELP =
-  'Create a personal API token at tahti.live → Settings → Account → API tokens and export it as TAHTI_API_TOKEN.';
+  'Create a personal API token at tahti.live → Settings → Account → API tokens, then run `tahti login` or export it as TAHTI_API_TOKEN.';
 
 export class CliError extends Error {}
 
-export function resolveConfig(env = process.env) {
-  const apiUrl = (env.TAHTI_API_URL || DEFAULT_API_URL).replace(/\/$/, '');
-  const token = env.TAHTI_API_TOKEN || null;
+export function resolveConfig(env = process.env, saved = readSavedConfig(env)) {
+  const apiUrl = (env.TAHTI_API_URL || saved.apiUrl || DEFAULT_API_URL).replace(
+    /\/$/,
+    '',
+  );
+  const token = env.TAHTI_API_TOKEN || saved.token || null;
   return { apiUrl, token };
 }
 
@@ -38,6 +43,13 @@ export function describeHttpError(status, path, apiMessage) {
   const suffix = apiMessage ? ` (${apiMessage})` : '';
   if (status === 401) {
     return `Token invalid or missing scope${suffix}. ${TOKEN_HELP}`;
+  }
+  if (
+    status === 403 &&
+    apiMessage &&
+    !/token|scope|^forbidden$/i.test(apiMessage)
+  ) {
+    return apiMessage;
   }
   if (status === 403) {
     return `Token invalid or missing scope${suffix}: this token is not allowed to access ${path}.`;
@@ -97,13 +109,14 @@ export function requireToken(config) {
   }
 }
 
-/** JSON POST for write commands. Needs a token with the `write` scope. */
-export async function apiPost(path, body, config) {
+/** JSON write request (POST, PATCH, PUT) that answers with a JSON body.
+ * Needs a token with the `write` scope. */
+export async function apiSendJson(method, path, body, config) {
   requireToken(config);
   let res;
   try {
     res = await fetch(`${config.apiUrl}${path}`, {
-      method: 'POST',
+      method,
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -122,6 +135,10 @@ export async function apiPost(path, body, config) {
     );
   }
   return res.json();
+}
+
+export function apiPost(path, body, config) {
+  return apiSendJson('POST', path, body, config);
 }
 
 /** Write request whose success answer has no body (204), e.g. PATCH or a

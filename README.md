@@ -62,10 +62,15 @@ on the generated `@tahti/api-client` package yet (that package is still
 `private` in tahti-org; see the WIP standalone SDK PR).
 
 1. Sign in at [tahti.live](https://tahti.live) → Settings → Account → API tokens
-2. `export TAHTI_API_TOKEN=tahti_...`
+2. `tahti login` and paste it (or `pass tahti | tahti login`); it is checked
+   and saved to `~/.config/tahti/config.json`, readable only by you.
+   `tahti logout` deletes it. Or `export TAHTI_API_TOKEN=tahti_...`, which
+   wins over the saved token.
 3. Optionally `export TAHTI_API_URL=https://api.tahti.live`
 
-`import` needs the **write** scope. Other commands work with **read**.
+Commands that change something (import, library edit/delete, collections
+add/remove, notifications read, blocks add/remove, messages send) need the
+**write** scope. Other commands work with **read**.
 
 ---
 
@@ -129,17 +134,30 @@ aligned columns; `-` for empty values.
 | Command | API | Notes |
 | ------- | --- | ----- |
 | `tahti whoami [--json]` | `GET /api/auth/me` | No email in table output |
+| `tahti login [--token <token>]` / `tahti logout` | `GET /api/auth/me` | Saves the checked token to `~/.config/tahti/config.json` (mode 600); `TAHTI_API_TOKEN` still wins |
 | `tahti library list [--sort <order>] [--json]` | `GET /api/me/sound` | sort: `newest`, `oldest`, `title`, `duration`, `bpm`, `genre` |
 | `tahti library show <id> [--json]` | `GET /api/me/sound/:id` | |
+| `tahti library edit <id> <field flags> [--json]` | `PATCH /api/me/sound/:id` | `--title`, `--description`, `--genre`, `--tags`, `--bpm`, `--key`, `--public`/`--private`, `--downloads on\|off`; needs **write** scope |
+| `tahti library delete <id> --yes` | `DELETE /api/me/sound/:id` | Names the sound and stops without `--yes`; needs **write** scope |
+| `tahti library download <id> [--out <dir>] [--force] [--url] [--json]` | `GET /api/me/sound/:id/download` | Saves the original; `--url` prints the signed link |
+| `tahti library processing [--wait] [--timeout <s>] [--json]` | `GET /api/me/sound/processing` | `--wait` polls every 5 s; exits 1 after `--timeout` |
 | `tahti releases list [--page] [--limit] [--json]` | `GET /api/me/releases` | |
 | `tahti releases show <id> [--json]` | `GET /api/me/releases/:id` | Tracklist; no audio URLs in table |
 | `tahti search <query> [--page] [--limit] [--json]` | `GET /api/v1/search/tracks` | Public; never sends the token |
-| `tahti import <folder> [--recursive] [--dry-run] [--force] [--json]` | uploads prepare/complete | Needs **write** scope |
+| `tahti import <folder> [--recursive] [--dry-run] [--force] [--ignore-tags] [--json]` | uploads prepare/complete | Title, artist, genre, BPM from MP3/FLAC tags; uploads are public by default; needs **write** scope |
 | `tahti notifications list [--limit <n>] [--unread] [--json]` | `GET /api/me/notifications` | Unread marked `*`, unread total below; `--limit` 1-50 |
 | `tahti notifications read <id> \| --all` | `PATCH /api/me/notifications/:id/read`, `POST /api/me/notifications/read-all` | Needs **write** scope; `--all` leaves sticky notices |
 | `tahti stats [--range <days>] [--json]` | `GET /api/me/stats/summary`, `GET /api/me/stats/top-tracks` | `--range` `1`, `7`, `30`, `all` (top tracks only) |
+| `tahti purchases [--json]` | `GET /api/me/purchases` | Amounts in EUR |
+| `tahti blocks list` / `add <username>` / `remove <username>` | `/api/me/blocks` | add/remove need **write** scope |
+| `tahti mentions [--limit <n>] [--json]` | `GET /api/me/mentions` | `--limit` 1-50 |
+| `tahti messages list [--json]` / `messages send <username> <message...>` | `/api/me/messages/conversations` | send needs **write** scope |
+| `tahti feed [--limit <n>] [--json]` | `GET /api/me/feed` | Posts, tracks, releases from artists you follow |
+| `tahti likes [--limit <n>] [--json]` | `GET /api/me/likes` | Tracks you loved; `--limit` 1-100 |
+| `tahti stash list [--page] [--limit] [--json]` | `GET /api/me/stash` | No share links in the table |
 | `tahti collections list [--json]` | `GET /api/me/collections` | |
 | `tahti collections show <slug> [--json]` | `GET /api/me/collections/:slug` | No signed audio URLs in table |
+| `tahti collections add <slug> [<sound-id>...] [--release <id>]` / `collections remove <slug> <#>` | `/api/me/collections/:slug/items` | One row per item; needs **write** scope |
 | `tahti channel [<slug>] [--json]` | `GET /api/channels/:slug` | Live state, now playing, next broadcast; public with a slug |
 | `tahti hearthis sets [--json]` | `GET /api/v1/imports/hearthis/me-sets` | Needs hearthis handle on profile |
 | `tahti hearthis set <permalink-or-url> [--json]` | set tracks | |
