@@ -8,7 +8,7 @@ import {
   findSetManifests,
   parseTrackSelection,
   runHearthisDownloadSet,
-} from './hearthis-download-set.mjs';
+} from './hearthis-download-set.js';
 
 function catalogResponse() {
   return {

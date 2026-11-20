@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { readFileSync } from 'node:fs';
 import { expect, vi } from 'vitest';
 

@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  repository_dispatch:
+    types: [api-client-published]
+  schedule:
+    - cron: '17 5 * * *'
 
 concurrency:
   group: ci-${{ github.ref }}-${{ github.event_name }}
@@ -27,7 +31,28 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Use newest @tahti/api-client (npm or pack from tahti-org)
+        env:
+          ANNOUNCED: ${{ github.event.client_payload.version }}
+        run: |
+          pnpm sdk:latest
+          installed() { node -p "require('./node_modules/@tahti/api-client/package.json').version"; }
+          for attempt in 1 2 3 4 5; do
+            if [ -z "$ANNOUNCED" ] || [ "$(installed)" = "$ANNOUNCED" ]; then
+              break
+            fi
+            echo "npm still serves $(installed), waiting for $ANNOUNCED (attempt $attempt)"
+            sleep 30
+            pnpm sdk:latest
+          done
+          version=$(installed)
+          echo "Building against @tahti/api-client $version"
+          echo "### @tahti/api-client $version" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Type-check
+        run: pnpm type-check
 
       - name: Lint
         run: pnpm lint
@@ -35,5 +60,8 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Build
+        run: pnpm build:offline
+
       - name: Smoke test
-        run: node src/cli.mjs --help
+        run: node dist/cli.js --help

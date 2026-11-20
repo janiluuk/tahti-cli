@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildIpcCommand, buildMpvArgs } from './mpv.mjs';
+import { buildIpcCommand, buildMpvArgs } from './mpv.js';
 
 describe('mpv helpers', () => {
   it('builds idle no-video IPC args', () => {

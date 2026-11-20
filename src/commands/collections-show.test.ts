@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { formatCollection, runCollectionsShow } from './collections-show.mjs';
+import { formatCollection, runCollectionsShow } from './collections-show.js';
 
 const COLLECTION = {
   id: 'c_1',

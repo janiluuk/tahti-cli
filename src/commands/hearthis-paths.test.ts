@@ -12,7 +12,7 @@ import {
   splitAlbumSetTitle,
   trackFileStem,
   withCleanImportTitles,
-} from './hearthis-paths.mjs';
+} from './hearthis-paths.js';
 
 describe('sanitizePathSegment', () => {
   it('strips path separators and trims', () => {

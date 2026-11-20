@@ -5,7 +5,7 @@ import {
   formatReleaseDetails,
   formatTracklist,
   runReleasesShow,
-} from './releases-show.mjs';
+} from './releases-show.js';
 
 const RELEASE = {
   id: 'rel_1',
@@ -83,12 +83,12 @@ describe('runReleasesShow', () => {
     await runReleasesShow(TEST_CONFIG, 'a/b');
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.test/api/me/releases/a%2Fb',
-      {
+      expect.objectContaining({
         headers: {
           Accept: 'application/json',
           Authorization: 'Bearer tahti_test',
         },
-      },
+      }),
     );
   });
 

@@ -6,7 +6,7 @@ import {
   formatDetails,
   formatTable,
   safeName,
-} from './format.mjs';
+} from './format.js';
 
 describe('formatDate', () => {
   it('prints the ISO date, or a dash when missing or invalid', () => {

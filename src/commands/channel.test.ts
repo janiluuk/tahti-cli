@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_CONFIG } from '../test-helpers';
-import { formatChannel, runChannel } from './channel.mjs';
+import { formatChannel, runChannel } from './channel.js';
 
 const LIVE = {
   slug: 'night-drive',

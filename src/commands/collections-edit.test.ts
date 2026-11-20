@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { TEST_CONFIG } from '../test-helpers';
-import {
-  runCollectionsAdd,
-  runCollectionsRemove,
-} from './collections-edit.mjs';
+import { fetchCallUrl, TEST_CONFIG } from '../test-helpers';
+import { runCollectionsAdd, runCollectionsRemove } from './collections-edit.js';
 
 function mockResponses(
   ...responses: Array<{ status: number; body?: unknown }>
@@ -54,7 +51,7 @@ describe('runCollectionsAdd', () => {
       JSON.stringify({ soundId: 's_2' }),
       JSON.stringify({ releaseId: 'r_1' }),
     ]);
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/collections/late-night/items',
     );
   });

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { formatHearthisSetsTable, runHearthisSets } from './hearthis-sets.mjs';
+import { formatHearthisSetsTable, runHearthisSets } from './hearthis-sets.js';
 
 describe('formatHearthisSetsTable', () => {
   it('renders permalink, title, track count, year, artist', () => {

@@ -4,7 +4,7 @@ import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
 import {
   formatCollectionsTable,
   runCollectionsList,
-} from './collections-list.mjs';
+} from './collections-list.js';
 
 const MIX = {
   id: 'c_1',

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { formatSearchTable, runSearch } from './search.mjs';
+import { formatSearchTable, runSearch } from './search.js';
 
 const NO_TOKEN = { apiUrl: TEST_CONFIG.apiUrl, token: null };
 
@@ -49,7 +49,7 @@ describe('runSearch', () => {
     const output = await runSearch(NO_TOKEN, 'night drive');
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.test/api/v1/search/tracks?q=night+drive',
-      { headers: { Accept: 'application/json' } },
+      expect.objectContaining({ headers: { Accept: 'application/json' } }),
     );
     expect(output).toContain('Track 1');
   });

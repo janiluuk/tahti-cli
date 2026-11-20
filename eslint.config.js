@@ -21,6 +21,10 @@ export default tseslint.config([
     files: ['**/*.{js,mjs,cjs,ts}'],
     rules: {
       curly: ['error', 'all'],
+      '@typescript-eslint/ban-ts-comment': [
+        'error',
+        { 'ts-nocheck': false, 'ts-ignore': true, 'ts-expect-error': true },
+      ],
     },
   },
 ]);

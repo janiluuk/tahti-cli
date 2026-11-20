@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runLibraryProcessing } from './library-processing.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runLibraryProcessing } from './library-processing.js';
 
 const BUSY = {
   processing: [{ id: 's_2', title: 'New Mix', status: 'PROCESSING' }],
@@ -32,7 +32,7 @@ describe('runLibraryProcessing', () => {
     const output = await runLibraryProcessing(TEST_CONFIG);
     expect(output).toContain('New Mix');
     expect(output).toContain('PROCESSING');
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/sound/processing',
     );
   });

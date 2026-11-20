@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runMentions } from './mentions.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runMentions } from './mentions.js';
 
 const MENTIONS = {
   mentions: [
@@ -36,7 +36,7 @@ describe('runMentions', () => {
   it('lists who mentioned you and where', async () => {
     const fetchMock = mockFetchJson(MENTIONS);
     const output = await runMentions(TEST_CONFIG, { limit: '5' });
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/mentions?limit=5',
     );
     expect(output).toContain('djkari');

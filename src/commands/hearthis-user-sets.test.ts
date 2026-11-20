@@ -5,7 +5,7 @@ import {
   filterSetsByTitle,
   runHearthisUserSets,
   sortSets,
-} from './hearthis-user-sets.mjs';
+} from './hearthis-user-sets.js';
 
 const page = (count: number, offset = 0) =>
   Array.from({ length: count }, (_, i) => ({

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runMessagesList, runMessagesSend } from './messages.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runMessagesList, runMessagesSend } from './messages.js';
 
 const CONVERSATIONS = [
   {
@@ -79,7 +79,7 @@ describe('runMessagesSend', () => {
     expect(fetchMock.mock.calls[0][1].body).toBe(
       JSON.stringify({ username: 'aurora' }),
     );
-    expect(fetchMock.mock.calls[1][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[1])).toBe(
       'https://api.example.test/api/me/messages/conversations/c_1/messages',
     );
     expect(fetchMock.mock.calls[1][1].body).toBe(

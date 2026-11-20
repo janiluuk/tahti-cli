@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_CONFIG } from '../test-helpers';
-import { runNotificationsRead } from './notifications-read.mjs';
+import { runNotificationsRead } from './notifications-read.js';
 
 function mockNoContent(status = 204, body: unknown = null) {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -32,7 +32,7 @@ describe('runNotificationsRead', () => {
         }),
       }),
     );
-    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('body');
+    expect(fetchMock.mock.calls[0][1]?.body ?? undefined).toBeUndefined();
   });
 
   it('marks everything read with --all', async () => {

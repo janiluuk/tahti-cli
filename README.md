@@ -57,9 +57,9 @@ pnpm --filter @tahti-player/tahti-cli exec tahti shell
 ## Auth
 
 Uses Tahti’s existing personal API tokens (`Authorization: Bearer tahti_...`,
-read/write scopes). Plain `fetch` against the public HTTP API — no dependency
-on the generated `@tahti/api-client` package yet (that package is still
-`private` in tahti-org; see the WIP standalone SDK PR).
+read/write scopes). HTTP goes through [`@tahti/api-client`](https://www.npmjs.com/package/@tahti/api-client)
+(`createTahtiClient`). Until that package is on npm, the repo vendors a packed tarball under
+`vendor/` (refreshed by `pnpm sdk:latest` from a tahti-org checkout).
 
 1. Sign in at [tahti.live](https://tahti.live) → Settings → Account → API tokens
 2. `tahti login` and paste it (or `pass tahti | tahti login`); it is checked
@@ -220,8 +220,10 @@ All errors exit with status `1`.
 
 ```bash
 pnpm install
+pnpm sdk:latest   # npm @tahti/api-client@latest, or pack from ../tahti-org
 pnpm test
 pnpm lint
+pnpm build:offline
 pnpm format:check
 ```
 

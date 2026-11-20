@@ -9,8 +9,8 @@ import {
   releaseUrl,
   runHearthisRelease,
   stateFilePath,
-} from './hearthis-release.mjs';
-import { LEDGER_FILENAME } from './hearthis-sounds.mjs';
+} from './hearthis-release.js';
+import { LEDGER_FILENAME } from './hearthis-sounds.js';
 
 describe('hearthisToRelease', () => {
   let dir: string;

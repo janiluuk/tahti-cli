@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runFeed } from './feed.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runFeed } from './feed.js';
 
 const ARTIST = {
   username: 'aurora',
@@ -50,7 +50,7 @@ describe('runFeed', () => {
   it('lists posts, tracks and releases', async () => {
     const fetchMock = mockFetchJson(FEED);
     const output = await runFeed(TEST_CONFIG);
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/feed',
     );
     expect(output).toContain('Tour: Dates are out');

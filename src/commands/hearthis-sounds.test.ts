@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CONFIG, stubApis } from './hearthis-api-stub';
-import { fetchLibrary, findLibraryMatch } from './hearthis-sounds.mjs';
+import { fetchLibrary, findLibraryMatch } from './hearthis-sounds.js';
 
 const TRACK = {
   id: '42',

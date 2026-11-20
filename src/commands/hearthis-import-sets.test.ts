@@ -3,15 +3,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { runHearthisCollection } from './hearthis-collection.mjs';
-import { runHearthisImportEmbeds } from './hearthis-import-embeds.mjs';
+import { runHearthisCollection } from './hearthis-collection.js';
+import { runHearthisImportEmbeds } from './hearthis-import-embeds.js';
 import {
   classifyCollectionOutcome,
   runHearthisImportSets,
-} from './hearthis-import-sets.mjs';
-import { fetchHearthisUserSets } from './hearthis-user-sets.mjs';
+} from './hearthis-import-sets.js';
+import { fetchHearthisUserSets } from './hearthis-user-sets.js';
 
-vi.mock('./hearthis-user-sets.mjs', () => ({
+vi.mock('./hearthis-user-sets.js', () => ({
   fetchHearthisUserSets: vi.fn(),
   filterSetsByTitle: (sets: unknown[], match: string | null) => {
     if (!match) {
@@ -22,11 +22,11 @@ vi.mock('./hearthis-user-sets.mjs', () => ({
   },
 }));
 
-vi.mock('./hearthis-import-embeds.mjs', () => ({
+vi.mock('./hearthis-import-embeds.js', () => ({
   runHearthisImportEmbeds: vi.fn().mockResolvedValue('0 embeds'),
 }));
 
-vi.mock('./hearthis-collection.mjs', () => ({
+vi.mock('./hearthis-collection.js', () => ({
   DEFAULT_PROCESSING_WAIT_SEC: 600,
   runHearthisCollection: vi.fn(),
 }));

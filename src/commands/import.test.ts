@@ -9,7 +9,7 @@ import {
   importFolder,
   runImport,
   titleFromFilename,
-} from './import.mjs';
+} from './import.js';
 
 type Call = { url: string; method: string; body?: unknown };
 

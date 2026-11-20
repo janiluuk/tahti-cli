@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { formatAmount, runPurchases } from './purchases.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { formatAmount, runPurchases } from './purchases.js';
 
 const PURCHASES = [
   {
@@ -25,7 +25,7 @@ describe('runPurchases', () => {
   it('lists purchases without showing an email as the artist', async () => {
     const fetchMock = mockFetchJson(PURCHASES);
     const output = await runPurchases(TEST_CONFIG);
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/purchases',
     );
     expect(output).toContain('2026-10-02');

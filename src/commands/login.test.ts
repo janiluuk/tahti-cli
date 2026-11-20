@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveConfig } from '../api-client.mjs';
-import { readSavedConfig } from '../config-file.mjs';
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { readToken, runDeviceLogin, runLogin, runLogout } from './login.mjs';
+import { resolveConfig } from '../api-client.js';
+import { readSavedConfig } from '../config-file.js';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { readToken, runDeviceLogin, runLogin, runLogout } from './login.js';
 
 const USER = { username: 'aurora', displayName: 'Aurora' };
 
@@ -94,7 +94,7 @@ describe('login and logout', () => {
     expect(output).toBe(
       `Signed in as Aurora (@aurora) (device session). Credentials saved to ${path}.`,
     );
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       `${TEST_CONFIG.apiUrl}/api/auth/login`,
     );
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runReleasesAddTracks } from './releases-add-tracks.mjs';
+import { runReleasesAddTracks } from './releases-add-tracks.js';
 
 const RELEASE = {
   id: 'rel_9',

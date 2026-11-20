@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { formatSoundDetails, runLibraryShow } from './library-show.mjs';
+import { formatSoundDetails, runLibraryShow } from './library-show.js';
 
 const SOUND = {
   id: 'snd_1',

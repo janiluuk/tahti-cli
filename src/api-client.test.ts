@@ -11,9 +11,9 @@ import {
   parsePositiveInt,
   refreshAccessToken,
   resolveConfig,
-} from './api-client.mjs';
-import { writeSavedConfig } from './config-file.mjs';
-import { mockFetchJson, TEST_CONFIG } from './test-helpers';
+} from './api-client.js';
+import { writeSavedConfig } from './config-file.js';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from './test-helpers';
 
 describe('resolveConfig', () => {
   it('defaults the API URL and strips a trailing slash from overrides', () => {
@@ -107,8 +107,15 @@ describe('apiGet', () => {
     const fetchMock = mockFetchJson({ ok: true });
     await apiGet('/api/x', { ...TEST_CONFIG, token: null }, { auth: false });
     await apiGet('/api/x', TEST_CONFIG, { auth: false });
-    for (const [, init] of fetchMock.mock.calls) {
-      expect(init).toEqual({ headers: { Accept: 'application/json' } });
+    expect(fetchMock).toHaveBeenCalled();
+    for (const call of fetchMock.mock.calls) {
+      const input = call[0] as Request | string;
+      if (typeof input === 'string') {
+        expect(call[1]?.headers).toMatchObject({ Accept: 'application/json' });
+      } else {
+        expect(input.headers.get('Authorization')).toBeNull();
+        expect(input.headers.get('Accept')).toBe('application/json');
+      }
     }
   });
 
@@ -151,7 +158,7 @@ describe('apiGet', () => {
     vi.stubGlobal('fetch', fetchMock);
     await expect(apiGet('/api/x', config)).resolves.toEqual({ ok: true });
     expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(fetchMock.mock.calls[1][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[1])).toBe(
       `${config.apiUrl}/api/auth/token/refresh`,
     );
     expect(config.token).toBe('new-access');

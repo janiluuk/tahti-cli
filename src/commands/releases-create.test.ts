@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { buildReleaseCreate, runReleasesCreate } from './releases-create.mjs';
+import { buildReleaseCreate, runReleasesCreate } from './releases-create.js';
 
 const CREATED = {
   id: 'rel_9',

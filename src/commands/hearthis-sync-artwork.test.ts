@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CONFIG } from './hearthis-api-stub';
-import { runHearthisSyncArtwork } from './hearthis-sync-artwork.mjs';
+import { runHearthisSyncArtwork } from './hearthis-sync-artwork.js';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

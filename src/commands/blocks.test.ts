@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runBlocksAdd, runBlocksList, runBlocksRemove } from './blocks.mjs';
+import { runBlocksAdd, runBlocksList, runBlocksRemove } from './blocks.js';
 
 describe('blocks', () => {
   afterEach(() => {
