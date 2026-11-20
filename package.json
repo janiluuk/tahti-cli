@@ -30,7 +30,7 @@
     "prebuild": "pnpm sdk:latest",
     "build": "tsc -p tsconfig.build.json",
     "build:offline": "tsc -p tsconfig.build.json",
-    "type-check": "tsc"
+    "type-check": "tsc -p tsconfig.build.json --noEmit"
   },
   "dependencies": {
     "@tahti/api-client": "file:vendor/tahti-api-client-0.1.0.tgz",
