@@ -70,7 +70,7 @@ function extensionFromName(fileName) {
   return AUDIO_EXTS.has(ext) ? ext : null;
 }
 
-function extensionFromContentType(mimeType) {
+export function extensionFromContentType(mimeType) {
   switch ((mimeType || '').split(';')[0].trim().toLowerCase()) {
     case 'audio/mpeg':
     case 'audio/mp3':
@@ -143,8 +143,30 @@ export function resolveAlbumArtist(set, tracks) {
   );
 }
 
-export function resolveAlbumTitle(set, permalink) {
-  return set?.title || permalink || 'Unknown Set';
+export function resolveAlbumTitle(set, permalink, title = null) {
+  return title || set?.title || permalink || 'Unknown Set';
+}
+
+export function resolveSetOwner(set, tracks) {
+  if (set?.userPermalink) {
+    return set.userPermalink;
+  }
+  const counts = new Map();
+  for (const track of tracks ?? []) {
+    if (track.userPermalink) {
+      counts.set(
+        track.userPermalink,
+        (counts.get(track.userPermalink) ?? 0) + 1,
+      );
+    }
+  }
+  let best = null;
+  for (const [owner, count] of counts) {
+    if (best === null || count > counts.get(best)) {
+      best = owner;
+    }
+  }
+  return best;
 }
 
 /** Relative path under --out: Artist/Album (year)/01 - Track.ext */
@@ -160,4 +182,132 @@ export function discographyRelativePath({
   const albumDir = albumFolderName(albumTitle, year);
   const file = `${trackFileStem(position, trackTitle)}.${extension}`;
   return `${artistDir}/${albumDir}/${file}`;
+}
+
+export const DOWNLOAD_LAYOUTS = ['discography', 'album', 'set'];
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function splitAlbumSetTitle(title, fallbackArtist) {
+  const text = String(title ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const parts = text.split(' - ');
+  const artist = parts.length > 1 ? parts[0].trim() : fallbackArtist;
+  let album = (parts.length > 1 ? parts[1] : parts[0]).trim();
+  let year = null;
+  const yearMatch = /\s*\((\d{4})\)\s*$/.exec(album);
+  if (yearMatch) {
+    year = Number(yearMatch[1]);
+    album = album.slice(0, yearMatch.index).trim();
+  }
+  return { artist: artist || fallbackArtist, album: album || text, year };
+}
+
+const ALBUM_KIND = String.raw`(?:LP|EP|Album|Single|Mixtape|Mix)`;
+
+/**
+ * Strip artist / album / track-number prefixes so an upload is titled with
+ * the track name only. Examples:
+ *   "Yaniho - Euphorizer EP - 01 - intro" → "intro"
+ *   "Mute8 LP - 02 - Ditpik" → "Ditpik"
+ *   "Sisufuzz LP - 11- Dive (2026 rework)" → "Dive (2026 rework)"
+ *
+ * Pass `{ artist, album }` from `splitAlbumSetTitle(setTitle, owner)` when
+ * importing a Set so "Artist - Album - NN - Title" cleans even without an
+ * LP/EP marker in the album name.
+ */
+export function cleanAlbumTrackTitle(title, { artist, album } = {}) {
+  const original = String(title ?? '').trim();
+  let text = original.replace(/\s+/g, ' ');
+  const baseline = text;
+
+  // "… Something LP/EP/Album - NN - Track" — keep a leading " - " so a
+  // featured-artist credit before the album ("Yaniho, Acraze - …") survives,
+  // then strip a lone album-artist prefix below.
+  text = text.replace(
+    new RegExp(
+      String.raw`(^|\s-\s)[^-]*?\b${ALBUM_KIND}\b\s*-\s*\d{1,3}(?:\.\d+)?\s*[-.]\s*`,
+      'i',
+    ),
+    (_match, lead) => lead,
+  );
+
+  if (album) {
+    text = text.replace(
+      new RegExp(
+        String.raw`(^|\s-\s)${escapeRegExp(album)}\s*-\s*\d{1,3}(?:\.\d+)?\s*[-.]\s*`,
+        'i',
+      ),
+      (_match, lead) => lead,
+    );
+  }
+
+  if (artist) {
+    text = text.replace(
+      new RegExp(String.raw`^${escapeRegExp(artist)}\s+-\s+`, 'i'),
+      '',
+    );
+  }
+
+  // Leftover leading track number ("01 - ", "08.5 - ", "11- ")
+  text = text.replace(/^\d{1,3}(?:\.\d+)?\s*[-.]\s+/, '');
+
+  text = text.replace(/\s+/g, ' ').trim().replace(/^-\s+/, '');
+  // DJ-set titles and other non-album names stay byte-for-byte so library
+  // matching and --fail paths that key on the hearthis.at title still work.
+  if (text === baseline) {
+    return original;
+  }
+  return text || original;
+}
+
+/**
+ * Clean every planned Set track's upload title using the Set name, keeping
+ * `sourceTitle` as the original hearthis.at title for library matching.
+ */
+export function withCleanImportTitles(tracks, setTitle, owner = null) {
+  const split = splitAlbumSetTitle(setTitle, owner || 'Unknown');
+  return tracks.map((track) => {
+    const sourceTitle = track.sourceTitle ?? track.title;
+    const title = cleanAlbumTrackTitle(sourceTitle, split);
+    if (title === sourceTitle) {
+      return track.sourceTitle ? track : { ...track, sourceTitle };
+    }
+    return { ...track, sourceTitle, title };
+  });
+}
+
+export function layoutRelativePath(
+  layout,
+  { artist, setTitle, albumTitle, year, position, trackTitle, extension },
+) {
+  if (layout === 'set') {
+    const setDir = sanitizePathSegment(setTitle, 'Unknown Set');
+    const name =
+      /^\S/.test(artist ?? '') && !String(trackTitle).startsWith(`${artist} - `)
+        ? `${artist} - ${trackTitle}`
+        : trackTitle;
+    const file = sanitizePathSegment(name, 'Track');
+    return `${setDir}/${file}.${extension}`;
+  }
+  if (layout === 'album') {
+    const split = splitAlbumSetTitle(setTitle, artist);
+    const albumDir = albumFolderName(
+      `${split.artist} - ${split.album}`,
+      split.year ?? year,
+    );
+    const name = cleanAlbumTrackTitle(trackTitle, split);
+    return `${albumDir}/${trackFileStem(position, name)}.${extension}`;
+  }
+  return discographyRelativePath({
+    artist,
+    albumTitle,
+    year,
+    position,
+    trackTitle,
+    extension,
+  });
 }

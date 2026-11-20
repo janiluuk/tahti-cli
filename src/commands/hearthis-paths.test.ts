@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import {
   albumFolderName,
+  cleanAlbumTrackTitle,
   discographyRelativePath,
+  layoutRelativePath,
   pickAudioExtension,
   resolveAlbumYear,
+  resolveSetOwner,
   sanitizePathSegment,
+  splitAlbumSetTitle,
   trackFileStem,
+  withCleanImportTitles,
 } from './hearthis-paths.mjs';
 
 describe('sanitizePathSegment', () => {
@@ -64,5 +69,120 @@ describe('resolveAlbumYear', () => {
         { releaseDate: '2022-06-01' },
       ]),
     ).toBe(2022);
+  });
+});
+
+describe('album and set layouts', () => {
+  it('splits a Set title into artist, album and year', () => {
+    expect(
+      splitAlbumSetTitle('Yaniho - Trancephobia LP - Old school trance', 'X'),
+    ).toEqual({ artist: 'Yaniho', album: 'Trancephobia LP', year: null });
+    expect(splitAlbumSetTitle('Yani & Ho - Mute8 (2026)', 'X')).toEqual({
+      artist: 'Yani & Ho',
+      album: 'Mute8',
+      year: 2026,
+    });
+    expect(splitAlbumSetTitle('Chilled sets', 'Yaniho')).toEqual({
+      artist: 'Yaniho',
+      album: 'Chilled sets',
+      year: null,
+    });
+  });
+
+  it('drops the album and track number from track titles', () => {
+    const album = { artist: 'Yaniho', album: 'Revitalize LP' };
+    expect(
+      cleanAlbumTrackTitle('Yaniho - Revitalize LP - 05 - Lights out', album),
+    ).toBe('Lights out');
+    expect(
+      cleanAlbumTrackTitle('Yaniho - Euphorizer EP - 01 - intro', {
+        artist: 'Yaniho',
+        album: 'Euphorizer EP',
+      }),
+    ).toBe('intro');
+    expect(
+      cleanAlbumTrackTitle(
+        'Yaniho, Acraze  - Revitalize LP - 02 - Do It To It (demo #1)',
+        album,
+      ),
+    ).toBe('Yaniho, Acraze - Do It To It (demo #1)');
+    expect(
+      cleanAlbumTrackTitle('Mute8 LP - 02 - Ditpik', {
+        artist: 'Yani & Ho',
+        album: 'Mute8',
+      }),
+    ).toBe('Ditpik');
+    expect(
+      cleanAlbumTrackTitle('Sisufuzz LP - 11- Dive (2026 rework)', album),
+    ).toBe('Dive (2026 rework)');
+    expect(cleanAlbumTrackTitle('XPRMNT LP - 08.5 - Gray matter', album)).toBe(
+      'Gray matter',
+    );
+    expect(
+      cleanAlbumTrackTitle('Yaniho - Chilled sets - 03 - Warmup', {
+        artist: 'Yaniho',
+        album: 'Chilled sets',
+      }),
+    ).toBe('Warmup');
+  });
+
+  it('cleans import track titles from the Set name and keeps sourceTitle', () => {
+    const [intro, mid] = withCleanImportTitles(
+      [
+        {
+          id: '1',
+          title: 'Yaniho - Euphorizer EP - 01 - intro',
+          position: 1,
+        },
+        {
+          id: '2',
+          title: 'Yaniho - Euphorizer EP - 02 - Midway',
+          position: 2,
+        },
+      ],
+      'Yaniho - Euphorizer EP',
+      'yaniho',
+    );
+    expect(intro).toMatchObject({
+      title: 'intro',
+      sourceTitle: 'Yaniho - Euphorizer EP - 01 - intro',
+      position: 1,
+    });
+    expect(mid.title).toBe('Midway');
+  });
+
+  it('builds album and set paths', () => {
+    const base = {
+      artist: 'Yaniho',
+      albumTitle: 'unused',
+      year: 2023,
+      position: 3,
+      extension: 'wav',
+    };
+    expect(
+      layoutRelativePath('album', {
+        ...base,
+        setTitle: 'Yaniho - Revitalize LP',
+        trackTitle: 'Yaniho - Revitalize LP - 05 - Lights out',
+      }),
+    ).toBe('Yaniho - Revitalize LP (2023)/03 - Lights out.wav');
+    expect(
+      layoutRelativePath('set', {
+        ...base,
+        setTitle: 'Archive 2001-2009',
+        trackTitle: 'Liveset @ Mermaid April 2007',
+      }),
+    ).toBe('Archive 2001-2009/Yaniho - Liveset @ Mermaid April 2007.wav');
+  });
+
+  it('takes the Set owner from the set, else the most common uploader', () => {
+    expect(resolveSetOwner({ userPermalink: 'yaniho' }, [])).toBe('yaniho');
+    expect(
+      resolveSetOwner(null, [
+        { userPermalink: 's-live' },
+        { userPermalink: 'yaniho' },
+        { userPermalink: 'yaniho' },
+      ]),
+    ).toBe('yaniho');
   });
 });

@@ -1,19 +1,26 @@
 export const NAV_ITEMS = [
   { id: 'library', label: 'Library' },
   { id: 'search', label: 'Search' },
+  { id: 'likes', label: 'Likes' },
   { id: 'radio', label: 'Radio' },
   { id: 'queue', label: 'Queue' },
+  { id: 'history', label: 'History' },
 ];
 
-export function createInitialState() {
+export const HISTORY_LIMIT = 100;
+export const RESTART_AFTER_SECONDS = 3;
+
+export function createInitialState({ history = [] } = {}) {
   return {
     navIndex: 0,
     focus: 'list', // 'nav' | 'list' | 'search'
     library: [],
     searchQuery: '',
     searchResults: [],
+    likes: [],
     radioItems: [],
     queue: [],
+    history,
     listIndex: 0,
     nowPlaying: null, // { id, title, artist, kind: 'track'|'live', url }
     paused: true,
@@ -35,10 +42,14 @@ export function currentList(state) {
       return state.library;
     case 'search':
       return state.searchResults;
+    case 'likes':
+      return state.likes;
     case 'radio':
       return state.radioItems;
     case 'queue':
       return state.queue;
+    case 'history':
+      return state.history;
     default:
       return [];
   }
@@ -111,9 +122,25 @@ export function clearQueue(state) {
   return { ...state, queue: [], status: 'Queue cleared.' };
 }
 
+function sameItem(a, b) {
+  return Boolean(a && b && a.source === b.source && a.id === b.id);
+}
+
+/** Puts the track that was playing at the top of the history when another
+ * one replaces it. Live streams stay out: they have no "previous" to go back
+ * to, and the Radio list already holds them. */
+export function rememberPlayed(state, replacement) {
+  const played = state.nowPlaying;
+  if (!played || played.kind === 'live' || sameItem(played, replacement)) {
+    return state.history;
+  }
+  return [played, ...state.history].slice(0, HISTORY_LIMIT);
+}
+
 export function setNowPlaying(state, item, { clearQueueForLive = false } = {}) {
   const next = {
     ...state,
+    history: rememberPlayed(state, item),
     nowPlaying: item,
     paused: false,
     timePos: 0,
@@ -130,6 +157,7 @@ export function advanceQueue(state) {
   if (state.queue.length === 0) {
     return {
       ...state,
+      history: rememberPlayed(state, null),
       nowPlaying: null,
       paused: true,
       timePos: null,
@@ -140,12 +168,42 @@ export function advanceQueue(state) {
   const [next, ...rest] = state.queue;
   return {
     ...state,
+    history: rememberPlayed(state, next),
     queue: rest,
     nowPlaying: next,
     paused: false,
     timePos: 0,
     duration: next.durationSec ?? null,
     status: `Playing: ${next.title}`,
+  };
+}
+
+export function shouldRestart(state) {
+  return Boolean(
+    state.nowPlaying &&
+    state.nowPlaying.kind !== 'live' &&
+    state.timePos > RESTART_AFTER_SECONDS,
+  );
+}
+
+/** Steps back to the last track in the history. The track that was playing
+ * goes to the front of the queue, so `n` returns to it. */
+export function goToPrevious(state) {
+  const [previous, ...older] = state.history;
+  if (!previous) {
+    return { ...state, status: 'Nothing played before this.' };
+  }
+  const current = state.nowPlaying;
+  const requeue = current && current.kind !== 'live' ? [current] : [];
+  return {
+    ...state,
+    history: older,
+    queue: [...requeue, ...state.queue],
+    nowPlaying: previous,
+    paused: false,
+    timePos: 0,
+    duration: previous.durationSec ?? null,
+    status: `Playing: ${previous.title}`,
   };
 }
 
