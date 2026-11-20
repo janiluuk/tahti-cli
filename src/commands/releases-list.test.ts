@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { formatReleasesTable, runReleasesList } from './releases-list.mjs';
+import { formatReleasesTable, runReleasesList } from './releases-list.js';
 
 const RELEASE = {
   id: 'rel_1',

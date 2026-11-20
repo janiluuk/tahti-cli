@@ -9,7 +9,7 @@ import {
   resolveLibraryPlayUrl,
   toLibraryPlayItem,
   toSearchPlayItem,
-} from './api.mjs';
+} from './api.js';
 
 describe('shell api helpers', () => {
   afterEach(() => {

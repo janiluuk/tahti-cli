@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveKeyAction } from './keys.mjs';
+import { resolveKeyAction } from './keys.js';
 
 describe('resolveKeyAction', () => {
   it('maps global playback keys', () => {

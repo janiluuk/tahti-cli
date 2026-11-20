@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { TEST_CONFIG } from '../test-helpers';
+import { fetchCallUrl, TEST_CONFIG } from '../test-helpers';
 import {
   buildReleasePlan,
   defaultReleaseType,
@@ -12,7 +12,7 @@ import {
   releaseCreateBody,
   selectOwnTracks,
   soundMetadataFor,
-} from './hearthis-release-meta.mjs';
+} from './hearthis-release-meta.js';
 
 const fixture = (name: string) =>
   JSON.parse(
@@ -116,7 +116,7 @@ describe('fetchHearthisCatalog', () => {
       TEST_CONFIG,
       'https://hearthis.at/set/378936-9675121/',
     );
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/v1/imports/hearthis/sets/378936-9675121/tracks',
     );
     expect(catalog.kind).toBe('set');

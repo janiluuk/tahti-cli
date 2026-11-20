@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runTrack } from './track.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runTrack } from './track.js';
 
 const TRACK = {
   id: 's1',
@@ -23,7 +23,7 @@ describe('tahti track', () => {
   it('shows a track and its public totals from an id or a link', async () => {
     const fetchMock = mockFetchJson(TRACK);
     const output = await runTrack(TEST_CONFIG, 'https://tahti.live/t/s1?x=1');
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/v1/tracks/s1',
     );
     expect(output).toContain('Moody Electronica vol. 40');

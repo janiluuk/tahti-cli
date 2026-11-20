@@ -166,6 +166,9 @@ importers:
 
   .:
     dependencies:
+      '@tahti/api-client':
+        specifier: file:vendor/tahti-api-client-0.1.0.tgz
+        version: file:vendor/tahti-api-client-0.1.0.tgz
       blessed:
         specifier: ^0.1.81
         version: 0.1.81
@@ -465,6 +468,10 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@tahti/api-client@file:vendor/tahti-api-client-0.1.0.tgz':
+    resolution: {integrity: sha512-GPniIe2MpBJ+63hOlDDq55kJxDD0iwsuf3Q6PIcWA4uQjCQohhOza4I3mESxHAvDtoUBpXdD7/amvgcFEVaong==, tarball: file:vendor/tahti-api-client-0.1.0.tgz}
+    version: 0.1.0
 
   '@types/blessed@0.1.27':
     resolution: {integrity: sha512-ZOQGjLvWDclAXp0rW5iuUBXeD6Gr1PkitN7tj7/G8FCoSzTsij6OhXusOzMKhwrZ9YlL2Pmu0d6xJ9zVvk+Hsg==}
@@ -916,6 +923,12 @@ packages:
     resolution: {integrity: sha512-XrsrhT5sybtKI6wakr2SPOlGZWWYbUXZ7a0jT8/QOeAPau+1X/bSegNe5YR75oJmEZQbKningirmGOEJCIk61Q==}
     engines: {node: '>=12.20.0'}
 
+  openapi-fetch@0.13.8:
+    resolution: {integrity: sha512-yJ4QKRyNxE44baQ9mY5+r/kAzZ8yXMemtNAOFwOzRXJscdjSxxzWSNlyBAr+o5JjkUw9Lc3W7OIoca0cY3PYnQ==}
+
+  openapi-typescript-helpers@0.0.15:
+    resolution: {integrity: sha512-opyTPaunsklCBpTK8JGef6mfPhLSnyy5a0IN9vKtx3+4aExf+KxEqYwIy3hqkedXIB97u357uLMJsOnm3GVjsw==}
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -1351,6 +1364,10 @@ snapshots:
   '@rolldown/pluginutils@1.0.1': {}
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@tahti/api-client@file:vendor/tahti-api-client-0.1.0.tgz':
+    dependencies:
+      openapi-fetch: 0.13.8
 
   '@types/blessed@0.1.27':
     dependencies:
@@ -1791,6 +1808,12 @@ snapshots:
   natural-compare@1.4.0: {}
 
   obug@2.2.1: {}
+
+  openapi-fetch@0.13.8:
+    dependencies:
+      openapi-typescript-helpers: 0.0.15
+
+  openapi-typescript-helpers@0.0.15: {}
 
   optionator@0.9.4:
     dependencies:

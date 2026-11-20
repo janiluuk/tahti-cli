@@ -3,8 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { TEST_CONFIG } from '../test-helpers';
-import { runLibraryDownload } from './library-download.mjs';
+import { fetchCallUrl, TEST_CONFIG } from '../test-helpers';
+import { runLibraryDownload } from './library-download.js';
 
 const DOWNLOAD = {
   url: 'https://storage.example.test/raw/s_1.flac?sig=abc',
@@ -48,7 +48,7 @@ describe('runLibraryDownload', () => {
     const target = join(dir, 'Night Drive Edit.flac');
     expect(output).toBe(`Saved ${target}`);
     expect(await readFile(target, 'utf8')).toBe('FLACDATA');
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/sound/s_1/download',
     );
     expect(fetchMock.mock.calls[1]).toEqual([DOWNLOAD.url]);

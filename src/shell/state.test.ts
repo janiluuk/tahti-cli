@@ -17,7 +17,7 @@ import {
   setNowPlaying,
   shouldRestart,
   toggleFocus,
-} from './state.mjs';
+} from './state.js';
 
 const ONE = { id: '1', title: 'One', kind: 'track', source: 'library' };
 const TWO = { id: '2', title: 'Two', kind: 'track', source: 'search' };

@@ -22,9 +22,9 @@ import {
   collectionStatePath,
   hearthisToCollection,
   runHearthisCollection,
-} from './hearthis-collection.mjs';
-import { hearthisToRelease } from './hearthis-release.mjs';
-import { LEDGER_FILENAME } from './hearthis-sounds.mjs';
+} from './hearthis-collection.js';
+import { hearthisToRelease } from './hearthis-release.js';
+import { LEDGER_FILENAME } from './hearthis-sounds.js';
 
 const PERMALINK = '378936-9675121';
 const TRACKS = fixture('tahti-hearthis-set-tracks.json').tracks as {

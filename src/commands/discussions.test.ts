@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
 import {
   runDiscussionsEdit,
   runDiscussionsFollow,
@@ -9,7 +9,7 @@ import {
   runDiscussionsReadAll,
   runDiscussionsReply,
   runDiscussionsShow,
-} from './discussions.mjs';
+} from './discussions.js';
 
 const TOPIC = {
   id: 'topic-1',
@@ -35,7 +35,7 @@ describe('tahti discussions', () => {
   it('lists topics with replies, new replies and state', async () => {
     const fetchMock = mockFetchJson({ topics: [TOPIC] });
     const output = await runDiscussionsList(TEST_CONFIG);
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/v1/governance/discussions',
     );
     expect(output).toContain('topic-1');
@@ -65,7 +65,7 @@ describe('tahti discussions', () => {
       ],
     });
     const output = await runDiscussionsShow(TEST_CONFIG, 'topic-1');
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/v1/governance/discussions/topic-1',
     );
     expect(output).toContain('Who plays?');
@@ -182,7 +182,7 @@ describe('tahti discussions', () => {
     const page = await runDiscussionsShow(TEST_CONFIG, 'topic-1', {
       before: '#12',
     });
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/v1/governance/discussions/topic-1/posts?before=12',
     );
     expect(page).toContain('Early on');

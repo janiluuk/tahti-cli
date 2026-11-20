@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
 import {
   buildReleasePatch,
   mergeLinks,
   runReleasesEdit,
-} from './releases-edit.mjs';
+} from './releases-edit.js';
 
 const RELEASE = {
   id: 'rel_1',
@@ -142,7 +142,7 @@ describe('runReleasesEdit', () => {
       link: ['bandcamp=https://artist.bandcamp.com/album/x'],
     });
 
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/releases/rel_1',
     );
     expect(fetchMock.mock.calls[1][1]).toEqual(

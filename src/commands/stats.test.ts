@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_CONFIG } from '../test-helpers';
-import { formatStats, runStats } from './stats.mjs';
+import { formatStats, runStats } from './stats.js';
 
 const SUMMARY = {
   playsToday: 3,

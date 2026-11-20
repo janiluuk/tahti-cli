@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runLikes, runSetLiked } from './likes.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runLikes, runSetLiked } from './likes.js';
 
 const LIKES = {
   items: [
@@ -27,7 +27,7 @@ describe('runLikes', () => {
   it('lists loved tracks without signed links or emails', async () => {
     const fetchMock = mockFetchJson(LIKES);
     const output = await runLikes(TEST_CONFIG, { limit: '10' });
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/likes?limit=10',
     );
     expect(output).toContain('2026-10-13');

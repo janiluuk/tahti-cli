@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { formatCurrentUser, runWhoami, safeDisplayName } from './whoami.mjs';
+import { formatCurrentUser, runWhoami, safeDisplayName } from './whoami.js';
 
 const USER = {
   id: 'u1',

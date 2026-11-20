@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_CONFIG } from '../test-helpers';
-import { parseTags, runSoundsUpload, uploadSounds } from './sounds-upload.mjs';
+import { parseTags, runSoundsUpload, uploadSounds } from './sounds-upload.js';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

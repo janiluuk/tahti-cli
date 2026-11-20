@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_CONFIG } from '../test-helpers';
-import { runLibraryDelete } from './library-delete.mjs';
+import { runLibraryDelete } from './library-delete.js';
 
 const SOUND = { id: 's_1', title: 'Night Drive', status: 'READY' };
 

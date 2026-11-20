@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { runHearthisImportEmbeds } from './hearthis-import-embeds.mjs';
+import { runHearthisImportEmbeds } from './hearthis-import-embeds.js';
 
 const config = { apiUrl: 'https://api.example.test', token: 'tahti_test' };
 

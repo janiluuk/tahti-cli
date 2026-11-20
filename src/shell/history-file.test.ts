@@ -7,8 +7,8 @@ import {
   historyPath,
   readShellHistory,
   writeShellHistory,
-} from './history-file.mjs';
-import { HISTORY_LIMIT } from './state.mjs';
+} from './history-file.js';
+import { HISTORY_LIMIT } from './state.js';
 
 const API_URL = 'https://api.tahti.live';
 

@@ -5,7 +5,7 @@ import {
   collectionCreateBody,
   parseCollectionVisibility,
   runCollectionsCreate,
-} from './collections-create.mjs';
+} from './collections-create.js';
 
 function mockResponses(
   ...responses: Array<{ status: number; body?: unknown }>

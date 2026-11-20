@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { main } from './cli.mjs';
-import { mockFetchJson } from './test-helpers';
+import { main } from './cli.js';
+import { fetchCallUrl, mockFetchJson } from './test-helpers';
 
 describe('main', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
@@ -319,7 +319,7 @@ describe('main', () => {
     expect(code).toBe(0);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.test/api/v1/search/tracks?q=night+drive',
-      { headers: { Accept: 'application/json' } },
+      expect.objectContaining({ headers: { Accept: 'application/json' } }),
     );
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Night Drive'));
   });
@@ -341,7 +341,7 @@ describe('main', () => {
     });
     vi.stubEnv('TAHTI_API_TOKEN', 'tahti_test');
     expect(await main(['notifications', 'list', '--unread'])).toBe(0);
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/notifications',
     );
     expect(String(logSpy.mock.calls[0][0])).toContain('nightowl followed you');
@@ -352,7 +352,7 @@ describe('main', () => {
     vi.stubGlobal('fetch', fetchMock);
     vi.stubEnv('TAHTI_API_TOKEN', 'tahti_test');
     expect(await main(['notifications', 'read', 'n_1'])).toBe(0);
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/notifications/n_1/read',
     );
     expect(String(logSpy.mock.calls[0][0])).toBe('Marked n_1 read.');

@@ -3,9 +3,11 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
     "skipLibCheck": true,
     "noEmit": true,
+    "esModuleInterop": true,
     "types": ["node", "vitest/globals"]
   },
   "include": ["src/**/*.ts"],

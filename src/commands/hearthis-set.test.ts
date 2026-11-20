@@ -4,7 +4,7 @@ import {
   formatHearthisSetTracksTable,
   parseHearthisSetPermalink,
   runHearthisSet,
-} from './hearthis-set.mjs';
+} from './hearthis-set.js';
 
 describe('parseHearthisSetPermalink', () => {
   it('accepts a set URL or bare permalink', () => {

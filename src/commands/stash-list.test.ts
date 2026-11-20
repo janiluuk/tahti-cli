@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
-import { runStashList } from './stash-list.mjs';
+import { fetchCallUrl, mockFetchJson, TEST_CONFIG } from '../test-helpers';
+import { runStashList } from './stash-list.js';
 
 const PAGE = {
   page: 2,
@@ -32,7 +32,7 @@ describe('runStashList', () => {
   it('lists a page of files without share tokens', async () => {
     const fetchMock = mockFetchJson(PAGE);
     const output = await runStashList(TEST_CONFIG, { page: '2', limit: '1' });
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchCallUrl(fetchMock.mock.calls[0])).toBe(
       'https://api.example.test/api/me/stash?page=2&limit=1',
     );
     expect(output).toContain('night-drive-master.wav');

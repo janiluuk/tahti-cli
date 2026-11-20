@@ -5,7 +5,7 @@ import {
   formatDuration,
   formatLibraryTable,
   runLibraryList,
-} from './library-list.mjs';
+} from './library-list.js';
 
 describe('formatDuration', () => {
   it('formats seconds as m:ss', () => {

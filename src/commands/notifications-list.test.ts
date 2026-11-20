@@ -4,7 +4,7 @@ import { mockFetchJson, TEST_CONFIG } from '../test-helpers';
 import {
   formatNotificationsTable,
   runNotificationsList,
-} from './notifications-list.mjs';
+} from './notifications-list.js';
 
 const UNREAD = {
   id: 'n_1',
