@@ -4,10 +4,12 @@ import { CliError, requireToken } from '../api-client.mjs';
 import {
   listLabel,
   loadLibraryItems,
+  loadLikedItems,
   loadRadioItems,
   loadSearchItems,
   resolveLibraryPlayUrl,
 } from './api.mjs';
+import { readShellHistory, writeShellHistory } from './history-file.mjs';
 import { HELP_TEXT, resolveKeyAction } from './keys.mjs';
 import { MpvController } from './mpv.mjs';
 import {
@@ -18,13 +20,16 @@ import {
   createInitialState,
   currentList,
   currentNavId,
+  goToPrevious,
   moveList,
   moveNav,
   NAV_ITEMS,
   nowPlayingLine,
+  rememberPlayed,
   selectedItem,
   setFocus,
   setNowPlaying,
+  shouldRestart,
   toggleFocus,
 } from './state.mjs';
 
@@ -40,7 +45,9 @@ export async function runShell(config) {
   assertTty();
   requireToken(config);
 
-  let state = createInitialState();
+  let state = createInitialState({
+    history: readShellHistory(config.apiUrl),
+  });
   let searchInput = null;
   let pollTimer = null;
   let closed = false;
@@ -121,7 +128,11 @@ export async function runShell(config) {
   });
 
   function setState(next) {
+    const previousHistory = state.history;
     state = clampListIndex(next);
+    if (state.history !== previousHistory) {
+      writeShellHistory(config.apiUrl, state.history);
+    }
     render();
   }
 
@@ -133,8 +144,10 @@ export async function runShell(config) {
     const labels = {
       library: ' Library ',
       search: state.searchQuery ? ` Search: ${state.searchQuery} ` : ' Search ',
+      likes: ' Likes ',
       radio: ' Radio ',
       queue: ' Queue ',
+      history: ' History ',
     };
     listBox.setLabel(labels[navId] ?? ' List ');
     listBox.style.border.fg = state.focus === 'list' ? 'cyan' : 'gray';
@@ -146,8 +159,10 @@ export async function runShell(config) {
       const empty = {
         library: 'No library items.',
         search: state.searchQuery ? 'No tracks found.' : 'Press / to search.',
+        likes: 'No loved tracks yet.',
         radio: 'No radio stations.',
         queue: 'Queue is empty.',
+        history: 'Nothing played yet.',
       };
       listBox.setItems([empty[navId] ?? 'Empty.']);
     } else {
@@ -179,6 +194,25 @@ export async function runShell(config) {
         library,
         loading: false,
         status: `Loaded ${library.length} library items.`,
+      });
+    } catch (error) {
+      setState({
+        ...state,
+        loading: false,
+        status: error?.message ?? String(error),
+      });
+    }
+  }
+
+  async function refreshLikes() {
+    setState({ ...state, loading: true, status: 'Loading likes…' });
+    try {
+      const likes = await loadLikedItems(config);
+      setState({
+        ...state,
+        likes,
+        loading: false,
+        status: `Loaded ${likes.length} loved tracks.`,
       });
     } catch (error) {
       setState({
@@ -264,6 +298,12 @@ export async function runShell(config) {
         ...state,
         status:
           'Search results have no stream URL — open the track on tahti.live, or play from Library.',
+      });
+      return;
+    } else if (item.source === 'likes' && !url) {
+      setState({
+        ...state,
+        status: 'This track has no stream here — open it on tahti.live.',
       });
       return;
     } else if (item.source === 'radio' && !url) {
@@ -462,12 +502,23 @@ export async function runShell(config) {
         }
         return;
       }
-      case 'prev':
-        setState({
-          ...state,
-          status: 'Previous track is not available in v1 (restart from list).',
-        });
+      case 'prev': {
+        if (shouldRestart(state) && mpv.running) {
+          try {
+            await mpv.seekTo(0);
+            setState({ ...state, timePos: 0, status: 'Restarted.' });
+          } catch (error) {
+            setState({ ...state, status: error?.message ?? String(error) });
+          }
+          return;
+        }
+        const hasPrevious = state.history.length > 0;
+        setState(goToPrevious(state));
+        if (hasPrevious) {
+          await playItem(state.nowPlaying);
+        }
         return;
+      }
       case 'seekBack':
         try {
           if (mpv.running) {
@@ -502,6 +553,9 @@ export async function runShell(config) {
     if (id === 'library' && state.library.length === 0 && !state.loading) {
       await refreshLibrary();
     }
+    if (id === 'likes' && state.likes.length === 0 && !state.loading) {
+      await refreshLikes();
+    }
     if (id === 'radio' && state.radioItems.length === 0 && !state.loading) {
       await refreshRadio();
     }
@@ -513,6 +567,7 @@ export async function runShell(config) {
     }
     closed = true;
     exitCode = code;
+    writeShellHistory(config.apiUrl, rememberPlayed(state, null));
     if (pollTimer) {
       clearInterval(pollTimer);
       pollTimer = null;

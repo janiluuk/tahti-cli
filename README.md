@@ -19,11 +19,11 @@ Product / mission docs live in tahti-org (`docs/CONSTITUTION.md`,
 `docs/AGENT.md`). Streaming architecture:
 [`docs/technical/streaming-architecture.md`](https://github.com/janiluuk/tahti-org/blob/main/docs/technical/streaming-architecture.md).
 
-> **Sync note:** Until `@tahti/api-client` is published from tahti-org and this
-> repo’s standalone SDK PR lands, the copy under
-> [tahti-player `packages/tahti-cli`](https://github.com/janiluuk/tahti-player/tree/main/packages/tahti-cli)
-> (e.g. PR [#508](https://github.com/janiluuk/tahti-player/pull/508)) is the
-> day-to-day development tree. This repo tracks the same command surface.
+> **Sync note:** Day-to-day CLI work still happens in
+> [tahti-player `packages/tahti-cli`](https://github.com/janiluuk/tahti-player/tree/master/packages/tahti-cli)
+> until cutover. This repo’s `src/` is synced from there (plain `fetch`).
+> Move plan: [tahti-cli-tool.md](https://github.com/janiluuk/tahti-player/blob/master/docs/todo/tahti-cli-tool.md)
+> (A sync → B `NPM_TOKEN` → C SDK on [#1](https://github.com/janiluuk/tahti-cli/pull/1) → D remove player package).
 
 ## Requirements
 
@@ -162,7 +162,12 @@ aligned columns; `-` for empty values.
 | `tahti hearthis sets [--json]` | `GET /api/v1/imports/hearthis/me-sets` | Needs hearthis handle on profile |
 | `tahti hearthis set <permalink-or-url> [--json]` | set tracks | |
 | `tahti hearthis download-set <permalink-or-url> [--out <dir>] [--dry-run] [--force] [--json]` | + hearthis `download_url` | Layout: `Artist/Album (year)/NN - Track.ext` |
-| `tahti shell` | library / search / radio + mpv | See cheatsheet above |
+| `tahti hearthis release <url>` / `collection <url>` / `import-sets --from-user <handle>` | download + upload + release/collection | Shared ledger; needs **write** |
+| `tahti hearthis import-embeds` / `sync-artwork` | localize embeds / cover art | Needs **write** |
+| `tahti collections create <name>` | `POST /api/me/collections` | Needs **write** |
+| `tahti releases create` / `edit` / `add-tracks` | `/api/me/releases` | Needs **write** |
+| `tahti sounds upload <file>` | uploads prepare/complete | Needs **write** |
+| `tahti shell` | library / search / likes / radio + mpv | See cheatsheet above |
 
 ### Examples
 
@@ -173,6 +178,9 @@ pnpm tahti search night drive --limit 10
 pnpm tahti hearthis sets
 pnpm tahti hearthis download-set 378936-9675121 --dry-run
 pnpm tahti hearthis download-set 378936-9675121 --out ~/Music/hearthis
+pnpm tahti hearthis import-sets --from-user yaniho --out ~/Music/hearthis
+pnpm tahti hearthis collection https://hearthis.at/set/428061-9675121/ --out ~/Music/hearthis --type mix-series
+pnpm tahti hearthis release https://hearthis.at/set/428061-9675121/ --out ~/Music/Albums
 pnpm tahti shell
 ```
 
@@ -181,6 +189,11 @@ pnpm tahti shell
 Requires `TAHTI_API_TOKEN` and a hearthis.at handle on your Tahti profile
 (Settings → Profile). Downloads use hearthis.at `download_url` (original
 upload — often WAV/FLAC), never the compressed stream preview.
+
+`hearthis release` / `collection` / `import-sets` reuse
+`<out>/.tahti-hearthis-sounds.json` so the same track is not uploaded twice.
+`import-sets` is resumable (retries while uploads process; localizes embeds
+that lack a page URL via the Set track URL).
 
 ### import
 
@@ -208,11 +221,12 @@ All errors exit with status `1`.
 ```bash
 pnpm install
 pnpm test
-pnpm lint   # needs a local eslint setup; in tahti-player use the workspace filter
+pnpm lint
+pnpm format:check
 ```
 
-Roadmap / history while the package still lives in the player monorepo:
-[`docs/todo/tahti-cli-tool.md`](https://github.com/janiluuk/tahti-player/blob/main/docs/todo/tahti-cli-tool.md).
+Move plan / history while the package still lives in the player monorepo:
+[`docs/todo/tahti-cli-tool.md`](https://github.com/janiluuk/tahti-player/blob/master/docs/todo/tahti-cli-tool.md).
 
 ## License
 
