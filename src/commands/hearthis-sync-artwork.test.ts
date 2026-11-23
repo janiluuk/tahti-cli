@@ -102,6 +102,69 @@ describe('hearthis sync-artwork', () => {
     expect(result.exitCode).toBe(0);
   });
 
+  it('matches library sounds by cleaned album titles', async () => {
+    const bannerCalls: string[] = [];
+    const fetchImpl = vi.fn(async (input: string, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+      if (url.includes('api-v2.hearthis.at/yaniho/?type=tracks')) {
+        return json([
+          {
+            id: '99',
+            title: 'Yaniho - Euphorizer LP - 02 - Particular particle',
+            permalink_url: 'https://hearthis.at/yaniho/particular-particle/',
+            duration: '240',
+            artwork_url: 'https://img.hearthis.at/x/w500_h500_cover.jpg',
+          },
+        ]);
+      }
+      if (url.includes('api-v2.hearthis.at/yaniho/')) {
+        return json({ permalink: 'yaniho' });
+      }
+      const path = url.replace(CONFIG.apiUrl, '');
+      if (path.startsWith('/api/me/sound?')) {
+        return json({
+          items: [
+            {
+              id: 'sound-clean',
+              title: 'Particular Particle',
+              durationSec: 241,
+              status: 'READY',
+            },
+          ],
+          total: 1,
+        });
+      }
+      if (
+        path === '/api/me/sound/sound-clean/banner/from-url' &&
+        method === 'POST'
+      ) {
+        bannerCalls.push(path);
+        return json({ url: 'https://cdn.test/sound/sound-clean/banner.jpg' });
+      }
+      return json({ error: `unexpected ${method} ${path}` }, 500);
+    });
+
+    vi.stubGlobal('fetch', fetchImpl);
+    const result = await runHearthisSyncArtwork(
+      { ...CONFIG, token: 'tahti_test' },
+      {
+        fetchImpl,
+        handle: 'yaniho',
+        backdrop: false,
+        json: true,
+      },
+    );
+    const body = JSON.parse(result.output);
+    expect(body.coverArt).toEqual([
+      expect.objectContaining({ soundId: 'sound-clean', status: 'set' }),
+    ]);
+    expect(bannerCalls).toEqual([
+      '/api/me/sound/sound-clean/banner/from-url',
+    ]);
+    expect(result.exitCode).toBe(0);
+  });
+
   it('honours coverArt: false and backdrop: false', async () => {
     const fetchImpl = vi.fn(async (input: string) => {
       if (String(input).includes('api-v2.hearthis.at')) {

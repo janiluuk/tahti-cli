@@ -104,6 +104,31 @@ describe('findLibraryMatch', () => {
       ]),
     ).toBeNull();
   });
+
+  it('matches a cleaned album title after Artist - Album LP - NN - Title cleanup', () => {
+    const hearthis = {
+      id: '99',
+      title: 'Yaniho - Euphorizer LP - 02 - Particular particle',
+      durationSec: 240,
+      url: 'https://hearthis.at/yaniho/particular-particle/',
+    };
+    const match = findLibraryMatch(
+      hearthis,
+      [
+        {
+          id: 'clean',
+          title: 'Particular Particle',
+          durationSec: 241,
+          status: 'READY',
+        },
+      ],
+      { artistNames: ['yaniho'] },
+    );
+    expect(match).toEqual({
+      sound: expect.objectContaining({ id: 'clean' }),
+      matchedBy: 'title + duration',
+    });
+  });
 });
 
 describe('fetchLibrary', () => {

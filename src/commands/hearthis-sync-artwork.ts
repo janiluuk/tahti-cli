@@ -159,8 +159,8 @@ export async function setAvatarFromUrl(config, sourceUrl) {
   return apiPost('/api/me/profile/avatar/from-url', { sourceUrl }, config);
 }
 
-function soundForTrack(track, sounds) {
-  const match = findLibraryMatch(track, sounds);
+function soundForTrack(track, sounds, { artistNames = [] } = {}) {
+  const match = findLibraryMatch(track, sounds, { artistNames });
   return match?.sound ?? null;
 }
 
@@ -264,8 +264,9 @@ export async function runHearthisSyncArtwork(
         'Your library has more sounds than the CLI can read in one go.',
       );
     }
+    const artistNames = [hearthisHandle].filter(Boolean);
     for (const track of tracks) {
-      const sound = soundForTrack(track, library.sounds);
+      const sound = soundForTrack(track, library.sounds, { artistNames });
       if (!sound) {
         result.coverArt.push({
           trackId: track.id,
