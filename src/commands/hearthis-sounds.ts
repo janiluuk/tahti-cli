@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { apiGet, apiPost, buildQuery, CliError } from '../api-client.js';
 import { uploadSoundFile } from '../sound-upload.js';
 import { downloadHearthisSet } from './hearthis-download-set.js';
+import { cleanAlbumTrackTitle } from './hearthis-paths.js';
 import { soundMetadataFor } from './hearthis-release-meta.js';
 
 export const LEDGER_FILENAME = '.tahti-hearthis-sounds.json';
@@ -166,6 +167,28 @@ const READY_FIRST = (a, b) =>
   String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? ''));
 
 /**
+ * Title keys used for library matching: the raw hearthis title plus cleaned
+ * album-form variants ("Artist - Album LP - 02 - Title" → "Title"), so
+ * sync-artwork still finds sounds after clean-album-track-titles ran.
+ */
+export function libraryTitleKeys(track, { artistNames = [] } = {}) {
+  const raw = [track.title, track.sourceTitle].filter(Boolean);
+  const variants = [...raw];
+  for (const title of raw) {
+    variants.push(cleanAlbumTrackTitle(title));
+    for (const artist of artistNames) {
+      if (!artist) continue;
+      variants.push(cleanAlbumTrackTitle(title, { artist }));
+    }
+  }
+  return [
+    ...new Set(
+      variants.map((value) => normalizeTitle(value)).filter(Boolean),
+    ),
+  ];
+}
+
+/**
  * Whether the library already holds this hearthis.at track. Answers
  * `{ sound, matchedBy }` for a sound to reuse, `{ conflict, sound }` when
  * something that may be the same track exists but cannot be reused safely
@@ -175,8 +198,11 @@ const READY_FIRST = (a, b) =>
  *
  * A sound still processing has no length yet, so a title match counts for
  * it. Sounds that failed processing are ignored.
+ *
+ * Pass `{ artistNames }` (e.g. the hearthis handle) so cleaned album titles
+ * match library rows after import title cleanup.
  */
-export function findLibraryMatch(track, sounds) {
+export function findLibraryMatch(track, sounds, { artistNames = [] } = {}) {
   const usable = sounds.filter((sound) => sound.status !== 'ERROR');
   const exported = usable.find(
     (sound) =>
@@ -185,14 +211,7 @@ export function findLibraryMatch(track, sounds) {
   if (exported) {
     return { sound: exported, matchedBy: 'hearthis export id' };
   }
-  const titles = [
-    ...new Set(
-      [track.title, track.sourceTitle]
-        .filter(Boolean)
-        .map((value) => normalizeTitle(value))
-        .filter(Boolean),
-    ),
-  ];
+  const titles = libraryTitleKeys(track, { artistNames });
   const sameTitle = usable
     .filter(
       (sound) =>
